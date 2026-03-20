@@ -97,7 +97,10 @@ export function createHostSession(options: {
     };
 
     ws.onerror = () => {
-      finish({ ok: false, message: "WebSocket connection failed." });
+      finish({
+        ok: false,
+        message: `WebSocket connection failed. Check that PartyKit is running (e.g. npm run party:dev) and that NEXT_PUBLIC_PARTYKIT_HOST / PORT match the server. Attempted: ${url}`,
+      });
     };
 
     ws.onclose = () => {

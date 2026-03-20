@@ -1,4 +1,5 @@
 {
   "name": "cleopardy",
-  "main": "partykit/server.ts"
+  "main": "partykit/server.ts",
+  "port": 1999
 }

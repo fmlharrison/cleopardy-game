@@ -2,16 +2,24 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Run **both** the Next.js app and PartyKit while developing realtime features (host “Create game”, game room, etc.):
+
+```bash
+# Terminal 1 — PartyKit (defaults to port 1999, see partykit.json)
+npm run party:dev
+
+# Terminal 2 — Next.js
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000). The client connects to **`ws://…/parties/main/<room>`** — PartyKit registers the default `server.ts` under party id **`main`**, not under `partykit.json`’s `name`. If the WebSocket fails, confirm PartyKit is on port **1999** (or set `NEXT_PUBLIC_PARTYKIT_HOST` / `PORT` in `.env.local`). For **LAN** access (`http://192.168.x.x:3000`), the client uses that host for port 1999 as well.
+
+See `.env.example` for optional overrides.
+
+### Next.js only (no realtime)
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
