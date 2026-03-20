@@ -6,6 +6,7 @@ Lightweight browser Jeopardy-style multiplayer: one host, up to 6 players, sessi
 
 - Next.js, TypeScript, Tailwind CSS
 - PartyKit (room = source of truth)
+- **Partysocket** (PartyKit client; WebSocket to the room with reconnect / backoff — browser dependency for the Next app)
 - Zod (board JSON + message validation as needed)
 
 ## Product scope (in)
@@ -21,7 +22,7 @@ Lightweight browser Jeopardy-style multiplayer: one host, up to 6 players, sessi
 | 7 | Host judging controls |
 | 8 | Live scoreboard |
 | 9 | End-game leaderboard + winner callout |
-| 10 | Basic reconnect via `localStorage` IDs |
+| 10 | Basic reconnect: stable `localStorage` IDs **plus** Partysocket transport reconnect (backoff), still reconciled on the server |
 
 ## Explicitly out of scope
 
@@ -192,8 +193,9 @@ Enforce in the room handler (not only UI):
 ## Reconnect & identity (`lib/ids.ts` + client)
 
 - Persist `hostId` and `playerId` in `localStorage`.
-- Refresh reuses same id; `RECONNECT_PLAYER` (and connection lifecycle) must **not** duplicate roster entries.
-- Disconnected players remain in `players` with `connected: false`.
+- **Transport:** Game clients connect to the PartyKit room with **Partysocket** (`PartySocket`, or the official React hook if the app standardizes on it) so drops, sleep, and flaky networks get **automatic reconnect** without hand-rolled `WebSocket` retry logic.
+- **Application:** On a new socket after reconnect, send **`RECONNECT_PLAYER`** (and/or rely on `onConnect` + known id) so the server can set `connected: true` and avoid treating the session as a brand-new player. Refresh reuses the same id; roster updates must **not** duplicate entries.
+- Disconnected players remain in `players` with `connected: false`. The PartyKit room remains authoritative; Partysocket only manages the client socket lifecycle.
 
 ## Preferred file layout
 
@@ -227,6 +229,8 @@ partykit/
   server.ts
 ```
 
+**`lib/websocket.ts`:** Small factory (e.g. `createPartySocket`) that returns **Partysocket**'s `PartySocket` for the configured host / party / room, and attaches shared **JSON helpers** (`stringifyClientMessage` / `parseServerMessage`) to incoming `message` events. Prefer Partysocket's URL/host options over duplicating PartyKit path rules in app code.
+
 ## UI (MVP)
 
 - Clear host vs player affordances
@@ -245,10 +249,10 @@ Work in whatever order you prefer; this matches the numbered scope and dependenc
 
 1. **Types & schemas** — `types/game.ts`, `types/messages.ts`, `schemas/board-schema.ts`, `lib/ranking.ts` (sort: score desc, joinOrder asc).
 2. **PartyKit core** — `partykit/server.ts`: room state, message handling, host/player rules, buzz winner, score updates, `SESSION_STATE` broadcasts.
-3. **Web client plumbing** — `lib/websocket.ts` (or PartyKit client wrapper), `lib/session-code.ts`, `lib/ids.ts` + `localStorage` wiring.
+3. **Web client plumbing** — `lib/websocket.ts` using **Partysocket**, `lib/session-code.ts`, `lib/ids.ts` + `localStorage` wiring.
 4. **Pages** — `/`, `/host` (JSON import via `JsonImportForm`), `/join`, `/game/[sessionCode]`.
 5. **Components** — `LobbyPanel`, `BoardGrid`, `ClueView`, `Scoreboard`, `EndGameLeaderboard`; host controls vs player buzz.
-6. **Polish & edge cases** — reconnect path, `ERROR` UX, disabled buttons from state, winner callout.
+6. **Polish & edge cases** — verify behavior after **Partysocket** reconnect (latest `SESSION_STATE`, when to send `RECONNECT_PLAYER`, no double-join), `ERROR` UX, disabled buttons from state, winner callout.
 
 ---
 
