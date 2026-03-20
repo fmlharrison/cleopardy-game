@@ -1,35 +1,111 @@
 import type * as Party from "partykit/server";
 
-import type { RoomState } from "../src/types/game";
-import type { ServerMessage } from "../src/types/messages";
+import { parseClientMessage } from "./parse-client-message";
+import { loadRoomState, sendError, sendSessionState } from "./room-helpers";
+import type { ClientMessage } from "../src/types/messages";
 
-function initialRoomState(sessionCode: string): RoomState {
-  return {
-    sessionCode,
-    hostId: null,
-    phase: "lobby",
-    board: null,
-    players: [],
-    answeredClueIds: [],
-    currentClueId: null,
-    buzzOpen: false,
-    buzzWinnerPlayerId: null,
-  };
+function messageToString(
+  message: string | ArrayBuffer | ArrayBufferView,
+): string {
+  if (typeof message === "string") {
+    return message;
+  }
+  if (message instanceof ArrayBuffer) {
+    return new TextDecoder().decode(message);
+  }
+  return new TextDecoder().decode(
+    message.buffer.slice(
+      message.byteOffset,
+      message.byteOffset + message.byteLength,
+    ),
+  );
 }
 
-function sessionStateMessage(state: RoomState): ServerMessage {
-  return { type: "SESSION_STATE", state };
+async function handleClientMessage(
+  room: Party.Room,
+  sender: Party.Connection,
+  msg: ClientMessage,
+): Promise<void> {
+  void room;
+
+  switch (msg.type) {
+    case "HOST_CREATE_SESSION": {
+      sendError(
+        sender,
+        "HOST_CREATE_SESSION is not implemented yet (game flow pending).",
+      );
+      return;
+    }
+    case "JOIN_SESSION": {
+      sendError(sender, "JOIN_SESSION is not implemented yet.");
+      return;
+    }
+    case "RECONNECT_PLAYER": {
+      sendError(sender, "RECONNECT_PLAYER is not implemented yet.");
+      return;
+    }
+    case "START_GAME": {
+      sendError(sender, "START_GAME is not implemented yet.");
+      return;
+    }
+    case "OPEN_CLUE": {
+      sendError(sender, "OPEN_CLUE is not implemented yet.");
+      return;
+    }
+    case "BUZZ": {
+      sendError(sender, "BUZZ is not implemented yet.");
+      return;
+    }
+    case "MARK_CORRECT":
+    case "MARK_INCORRECT": {
+      sendError(sender, "Judging actions are not implemented yet.");
+      return;
+    }
+    case "REOPEN_BUZZ": {
+      sendError(sender, "REOPEN_BUZZ is not implemented yet.");
+      return;
+    }
+    case "CLOSE_CLUE": {
+      sendError(sender, "CLOSE_CLUE is not implemented yet.");
+      return;
+    }
+    case "END_GAME": {
+      sendError(sender, "END_GAME is not implemented yet.");
+      return;
+    }
+  }
 }
 
 /**
- * PartyKit room server (scaffold). Gameplay and message handling come later.
+ * Cleopardy PartyKit room — typed message wiring; game rules are stubs.
  */
 export default class CleopardyRoom implements Party.Server {
   constructor(readonly room: Party.Room) {}
 
-  onConnect(connection: Party.Connection): void | Promise<void> {
-    const state = initialRoomState(this.room.id);
-    const payload = sessionStateMessage(state);
-    connection.send(JSON.stringify(payload));
+  async onConnect(connection: Party.Connection): Promise<void> {
+    const state = await loadRoomState(this.room);
+    sendSessionState(connection, state);
+  }
+
+  async onMessage(
+    message: string | ArrayBuffer | ArrayBufferView,
+    sender: Party.Connection,
+  ): Promise<void> {
+    const text = messageToString(message);
+    let data: unknown;
+    try {
+      data = JSON.parse(text) as unknown;
+    } catch {
+      sendError(sender, "Invalid JSON message.");
+      return;
+    }
+
+    const clientMsg = parseClientMessage(data);
+    if (!clientMsg) {
+      sendError(sender, "Unrecognized message shape.");
+      return;
+    }
+
+    await handleClientMessage(this.room, sender, clientMsg);
   }
 }
