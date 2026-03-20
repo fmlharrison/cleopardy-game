@@ -1,7 +1,14 @@
 import type * as Party from "partykit/server";
 
 import { parseClientMessage } from "./parse-client-message";
-import { loadRoomState, sendError, sendSessionState } from "./room-helpers";
+import {
+  broadcastSessionState,
+  loadRoomState,
+  saveRoomState,
+  sendError,
+  sendSessionState,
+} from "./room-helpers";
+import type { RoomState } from "../src/types/game";
 import type { ClientMessage } from "../src/types/messages";
 
 function messageToString(
@@ -26,14 +33,29 @@ async function handleClientMessage(
   sender: Party.Connection,
   msg: ClientMessage,
 ): Promise<void> {
-  void room;
-
   switch (msg.type) {
     case "HOST_CREATE_SESSION": {
-      sendError(
-        sender,
-        "HOST_CREATE_SESSION is not implemented yet (game flow pending).",
-      );
+      const state = await loadRoomState(room);
+      if (state.hostId !== null && state.board !== null) {
+        sendError(sender, "This session already has a host.");
+        return;
+      }
+
+      const next: RoomState = {
+        ...state,
+        sessionCode: room.id,
+        hostId: msg.hostId,
+        board: msg.board,
+        phase: "lobby",
+        players: [],
+        answeredClueIds: [],
+        currentClueId: null,
+        buzzOpen: false,
+        buzzWinnerPlayerId: null,
+      };
+
+      await saveRoomState(room, next);
+      broadcastSessionState(room, next);
       return;
     }
     case "JOIN_SESSION": {
