@@ -43,6 +43,12 @@ export function parseClientMessage(data: unknown): ClientMessage | null {
         name: rec.name,
       };
     }
+    case "RECONNECT_HOST": {
+      if (typeof rec.hostId !== "string") {
+        return null;
+      }
+      return { type: "RECONNECT_HOST", hostId: rec.hostId };
+    }
     case "RECONNECT_PLAYER": {
       if (typeof rec.playerId !== "string") {
         return null;

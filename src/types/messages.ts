@@ -3,6 +3,7 @@ import type { Board, RankedPlayer, RoomState } from "./game";
 export type ClientMessage =
   | { type: "HOST_CREATE_SESSION"; hostId: string; board: Board }
   | { type: "JOIN_SESSION"; playerId: string; name: string }
+  | { type: "RECONNECT_HOST"; hostId: string }
   | { type: "RECONNECT_PLAYER"; playerId: string }
   | { type: "START_GAME"; actorId: string }
   | { type: "OPEN_CLUE"; actorId: string; clueId: string }

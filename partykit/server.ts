@@ -1,5 +1,6 @@
 import type * as Party from "partykit/server";
 
+import { RoomConnectionTracker } from "./connection-tracker";
 import { parseClientMessage } from "./parse-client-message";
 import {
   broadcastBuzzLocked,
@@ -108,6 +109,7 @@ async function handleClientMessage(
   room: Party.Room,
   sender: Party.Connection,
   msg: ClientMessage,
+  connections: RoomConnectionTracker,
 ): Promise<void> {
   switch (msg.type) {
     case "HOST_CREATE_SESSION": {
@@ -132,6 +134,7 @@ async function handleClientMessage(
 
       await saveRoomState(room, next);
       broadcastSessionState(room, next);
+      connections.attachHost(sender.id);
       return;
     }
     case "JOIN_SESSION": {
@@ -177,6 +180,7 @@ async function handleClientMessage(
         const nextJoin: RoomState = { ...joinState, players };
         await saveRoomState(room, nextJoin);
         broadcastSessionState(room, nextJoin);
+        connections.attachPlayer(sender.id, msg.playerId);
         return;
       }
 
@@ -209,6 +213,16 @@ async function handleClientMessage(
       };
       await saveRoomState(room, nextJoin);
       broadcastSessionState(room, nextJoin);
+      connections.attachPlayer(sender.id, msg.playerId);
+      return;
+    }
+    case "RECONNECT_HOST": {
+      const rh = await loadRoomState(room);
+      if (rh.hostId === null || msg.hostId !== rh.hostId) {
+        sendError(sender, "You are not the host of this session.");
+        return;
+      }
+      connections.attachHost(sender.id);
       return;
     }
     case "RECONNECT_PLAYER": {
@@ -216,6 +230,10 @@ async function handleClientMessage(
       const idx = rs.players.findIndex((p) => p.id === msg.playerId);
       if (idx < 0) {
         sendError(sender, "You are not in this session.");
+        return;
+      }
+      connections.attachPlayer(sender.id, msg.playerId);
+      if (rs.players[idx].connected) {
         return;
       }
       const players = [...rs.players];
@@ -504,11 +522,33 @@ async function handleClientMessage(
  * Cleopardy PartyKit room — typed message wiring; game rules are stubs.
  */
 export default class CleopardyRoom implements Party.Server {
+  private readonly connections = new RoomConnectionTracker();
+
   constructor(readonly room: Party.Room) {}
 
   async onConnect(connection: Party.Connection): Promise<void> {
     const state = await loadRoomState(this.room);
     sendSessionState(connection, state);
+  }
+
+  async onClose(connection: Party.Connection): Promise<void> {
+    const lostPlayerId = this.connections.onConnectionClosed(connection.id);
+    if (!lostPlayerId) {
+      return;
+    }
+    const rs = await loadRoomState(this.room);
+    const idx = rs.players.findIndex((p) => p.id === lostPlayerId);
+    if (idx < 0) {
+      return;
+    }
+    if (!rs.players[idx].connected) {
+      return;
+    }
+    const players = [...rs.players];
+    players[idx] = { ...players[idx], connected: false };
+    const next: RoomState = { ...rs, players };
+    await saveRoomState(this.room, next);
+    broadcastSessionState(this.room, next);
   }
 
   async onMessage(
@@ -530,6 +570,6 @@ export default class CleopardyRoom implements Party.Server {
       return;
     }
 
-    await handleClientMessage(this.room, sender, clientMsg);
+    await handleClientMessage(this.room, sender, clientMsg, this.connections);
   }
 }

@@ -87,6 +87,15 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
           };
           ws.send(stringifyClientMessage(msg));
         }
+      } else if (role === "host") {
+        const hostId = readStoredId(STORAGE_KEYS.hostId);
+        if (hostId) {
+          const msg: ClientMessage = {
+            type: "RECONNECT_HOST",
+            hostId,
+          };
+          ws.send(stringifyClientMessage(msg));
+        }
       }
     };
 
