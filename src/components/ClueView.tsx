@@ -257,7 +257,7 @@ export function ClueView({
                 </button>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Actions will send server messages once wired.
+                The server validates each action; errors appear above.
               </p>
             </div>
           ) : null}

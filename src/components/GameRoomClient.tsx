@@ -63,6 +63,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   const [connectError, setConnectError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const roomStateRef = useRef<RoomState | null>(null);
+
+  useEffect(() => {
+    roomStateRef.current = roomState;
+  }, [roomState]);
 
   useEffect(() => {
     const url = getPartySocketUrl(sessionCode);
@@ -163,6 +168,64 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     ws.send(stringifyClientMessage(msg));
   }, []);
 
+  const handleHostMarkCorrect = useCallback(() => {
+    setActionError(null);
+    const hostId = readStoredId(STORAGE_KEYS.hostId);
+    const ws = wsRef.current;
+    const winnerId = roomStateRef.current?.buzzWinnerPlayerId;
+    if (!hostId || !winnerId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot mark correct: not ready.");
+      return;
+    }
+    const msg: ClientMessage = {
+      type: "MARK_CORRECT",
+      actorId: hostId,
+      playerId: winnerId,
+    };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
+  const handleHostMarkIncorrect = useCallback(() => {
+    setActionError(null);
+    const hostId = readStoredId(STORAGE_KEYS.hostId);
+    const ws = wsRef.current;
+    const winnerId = roomStateRef.current?.buzzWinnerPlayerId;
+    if (!hostId || !winnerId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot mark incorrect: not ready.");
+      return;
+    }
+    const msg: ClientMessage = {
+      type: "MARK_INCORRECT",
+      actorId: hostId,
+      playerId: winnerId,
+    };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
+  const handleHostReopenBuzz = useCallback(() => {
+    setActionError(null);
+    const hostId = readStoredId(STORAGE_KEYS.hostId);
+    const ws = wsRef.current;
+    if (!hostId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot reopen buzz: not connected or missing host id.");
+      return;
+    }
+    const msg: ClientMessage = { type: "REOPEN_BUZZ", actorId: hostId };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
+  const handleHostCloseClue = useCallback(() => {
+    setActionError(null);
+    const hostId = readStoredId(STORAGE_KEYS.hostId);
+    const ws = wsRef.current;
+    if (!hostId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot close clue: not connected or missing host id.");
+      return;
+    }
+    const msg: ClientMessage = { type: "CLOSE_CLUE", actorId: hostId };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
   if (connectError && !roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
@@ -231,6 +294,28 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     roomState.buzzOpen &&
     roomState.buzzWinnerPlayerId === null &&
     playerIdStored !== null;
+
+  const isAuthoritativeHost =
+    role === "host" &&
+    wsReady &&
+    hostIdStored !== null &&
+    hostIdStored === roomState.hostId;
+
+  const hostCanMarkJudgment =
+    isAuthoritativeHost &&
+    phase === "judging" &&
+    roomState.buzzWinnerPlayerId !== null;
+
+  const hostCanReopenBuzz =
+    isAuthoritativeHost &&
+    phase === "judging" &&
+    roomState.buzzWinnerPlayerId === null &&
+    roomState.currentClueId !== null;
+
+  const hostCanCloseClue =
+    isAuthoritativeHost &&
+    (phase === "clue_open" || phase === "judging") &&
+    roomState.currentClueId !== null;
 
   return (
     <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
@@ -363,6 +448,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 selfPlayerId={playerIdStored}
                 buzzEligible={playerBuzzEligible}
                 onBuzz={playerBuzzEligible ? handleBuzz : undefined}
+                onHostMarkCorrect={
+                  hostCanMarkJudgment ? handleHostMarkCorrect : undefined
+                }
+                onHostMarkIncorrect={
+                  hostCanMarkJudgment ? handleHostMarkIncorrect : undefined
+                }
+                onHostReopenBuzz={
+                  hostCanReopenBuzz ? handleHostReopenBuzz : undefined
+                }
+                onHostCloseClue={
+                  hostCanCloseClue ? handleHostCloseClue : undefined
+                }
               />
             ) : null}
             {isCluePhase && !openClue ? (

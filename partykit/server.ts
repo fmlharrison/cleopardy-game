@@ -26,6 +26,29 @@ function findClueOnBoard(board: Board, clueId: string) {
   return null;
 }
 
+function allClueIdsOnBoard(board: Board): string[] {
+  const ids: string[] = [];
+  for (const category of board.categories) {
+    for (const clue of category.clues) {
+      ids.push(clue.id);
+    }
+  }
+  return ids;
+}
+
+/** After updating `answeredClueIds`, choose board vs game over when leaving a clue. */
+function nextPhaseWhenClueFinishes(state: RoomState): "board" | "game_over" {
+  if (!state.board) {
+    return "board";
+  }
+  const ids = allClueIdsOnBoard(state.board);
+  if (ids.length === 0) {
+    return "board";
+  }
+  const allAnswered = ids.every((id) => state.answeredClueIds.includes(id));
+  return allAnswered ? "game_over" : "board";
+}
+
 function isDuplicatePlayerName(
   players: Player[],
   name: string,
@@ -275,17 +298,164 @@ async function handleClientMessage(
       broadcastBuzzLocked(room, msg.playerId);
       return;
     }
-    case "MARK_CORRECT":
+    case "MARK_CORRECT": {
+      const mc = await loadRoomState(room);
+      if (msg.actorId !== mc.hostId) {
+        sendError(sender, "Only the host can mark an answer.");
+        return;
+      }
+      if (mc.phase !== "judging") {
+        sendError(sender, "You can only mark correct during judging.");
+        return;
+      }
+      if (mc.buzzWinnerPlayerId === null) {
+        sendError(sender, "There is no player to judge.");
+        return;
+      }
+      if (msg.playerId !== mc.buzzWinnerPlayerId) {
+        sendError(sender, "That is not the current buzzer.");
+        return;
+      }
+      if (mc.currentClueId === null || !mc.board) {
+        sendError(sender, "There is no active clue.");
+        return;
+      }
+      const clueMc = findClueOnBoard(mc.board, mc.currentClueId);
+      if (!clueMc) {
+        sendError(sender, "Active clue is not on the board.");
+        return;
+      }
+      if (mc.answeredClueIds.includes(mc.currentClueId)) {
+        sendError(sender, "That clue is already marked answered.");
+        return;
+      }
+      const winIdx = mc.players.findIndex(
+        (p) => p.id === mc.buzzWinnerPlayerId,
+      );
+      if (winIdx < 0) {
+        sendError(sender, "Buzz winner is not in the roster.");
+        return;
+      }
+
+      const playersMc = [...mc.players];
+      const prev = playersMc[winIdx];
+      playersMc[winIdx] = {
+        ...prev,
+        score: prev.score + clueMc.value,
+      };
+      const answeredMc = [...mc.answeredClueIds, mc.currentClueId];
+      const baseMc: RoomState = {
+        ...mc,
+        players: playersMc,
+        answeredClueIds: answeredMc,
+        currentClueId: null,
+        buzzWinnerPlayerId: null,
+        buzzOpen: false,
+      };
+      const nextMc: RoomState = {
+        ...baseMc,
+        phase: nextPhaseWhenClueFinishes(baseMc),
+      };
+      await saveRoomState(room, nextMc);
+      broadcastSessionState(room, nextMc);
+      return;
+    }
     case "MARK_INCORRECT": {
-      sendError(sender, "Judging actions are not implemented yet.");
+      const mi = await loadRoomState(room);
+      if (msg.actorId !== mi.hostId) {
+        sendError(sender, "Only the host can mark an answer.");
+        return;
+      }
+      if (mi.phase !== "judging") {
+        sendError(sender, "You can only mark incorrect during judging.");
+        return;
+      }
+      if (mi.buzzWinnerPlayerId === null) {
+        sendError(sender, "There is no player to judge.");
+        return;
+      }
+      if (msg.playerId !== mi.buzzWinnerPlayerId) {
+        sendError(sender, "That is not the current buzzer.");
+        return;
+      }
+
+      const nextMi: RoomState = {
+        ...mi,
+        buzzWinnerPlayerId: null,
+        buzzOpen: false,
+      };
+      await saveRoomState(room, nextMi);
+      broadcastSessionState(room, nextMi);
       return;
     }
     case "REOPEN_BUZZ": {
-      sendError(sender, "REOPEN_BUZZ is not implemented yet.");
+      const rb = await loadRoomState(room);
+      if (msg.actorId !== rb.hostId) {
+        sendError(sender, "Only the host can reopen buzzing.");
+        return;
+      }
+      if (rb.phase !== "judging") {
+        sendError(sender, "You can only reopen buzz during judging.");
+        return;
+      }
+      if (rb.currentClueId === null) {
+        sendError(sender, "There is no active clue.");
+        return;
+      }
+      if (rb.buzzWinnerPlayerId !== null) {
+        sendError(sender, "Resolve or clear the current buzzer first.");
+        return;
+      }
+      if (rb.board && rb.answeredClueIds.includes(rb.currentClueId)) {
+        sendError(sender, "That clue is already finished.");
+        return;
+      }
+
+      const nextRb: RoomState = {
+        ...rb,
+        phase: "clue_open",
+        buzzOpen: true,
+      };
+      await saveRoomState(room, nextRb);
+      broadcastSessionState(room, nextRb);
       return;
     }
     case "CLOSE_CLUE": {
-      sendError(sender, "CLOSE_CLUE is not implemented yet.");
+      const cc = await loadRoomState(room);
+      if (msg.actorId !== cc.hostId) {
+        sendError(sender, "Only the host can close a clue.");
+        return;
+      }
+      if (cc.phase !== "clue_open" && cc.phase !== "judging") {
+        sendError(sender, "No active clue to close.");
+        return;
+      }
+      if (cc.currentClueId === null || !cc.board) {
+        sendError(sender, "There is no active clue.");
+        return;
+      }
+      const clueCc = findClueOnBoard(cc.board, cc.currentClueId);
+      if (!clueCc) {
+        sendError(sender, "Active clue is not on the board.");
+        return;
+      }
+
+      const answeredCc = cc.answeredClueIds.includes(cc.currentClueId)
+        ? cc.answeredClueIds
+        : [...cc.answeredClueIds, cc.currentClueId];
+      const baseCc: RoomState = {
+        ...cc,
+        answeredClueIds: answeredCc,
+        currentClueId: null,
+        buzzWinnerPlayerId: null,
+        buzzOpen: false,
+      };
+      const nextCc: RoomState = {
+        ...baseCc,
+        phase: nextPhaseWhenClueFinishes(baseCc),
+      };
+      await saveRoomState(room, nextCc);
+      broadcastSessionState(room, nextCc);
       return;
     }
     case "END_GAME": {
