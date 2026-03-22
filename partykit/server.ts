@@ -3,6 +3,7 @@ import type * as Party from "partykit/server";
 import { parseClientMessage } from "./parse-client-message";
 import {
   broadcastBuzzLocked,
+  broadcastGameEnded,
   broadcastSessionState,
   loadRoomState,
   saveRoomState,
@@ -47,6 +48,27 @@ function nextPhaseWhenClueFinishes(state: RoomState): "board" | "game_over" {
   }
   const allAnswered = ids.every((id) => state.answeredClueIds.includes(id));
   return allAnswered ? "game_over" : "board";
+}
+
+function finalizeGameOverState(state: RoomState): RoomState {
+  return {
+    ...state,
+    phase: "game_over",
+    currentClueId: null,
+    buzzWinnerPlayerId: null,
+    buzzOpen: false,
+  };
+}
+
+async function saveSessionAndMaybeGameEnded(
+  room: Party.Room,
+  state: RoomState,
+): Promise<void> {
+  await saveRoomState(room, state);
+  broadcastSessionState(room, state);
+  if (state.phase === "game_over") {
+    broadcastGameEnded(room, state.players);
+  }
 }
 
 function isDuplicatePlayerName(
@@ -356,8 +378,7 @@ async function handleClientMessage(
         ...baseMc,
         phase: nextPhaseWhenClueFinishes(baseMc),
       };
-      await saveRoomState(room, nextMc);
-      broadcastSessionState(room, nextMc);
+      await saveSessionAndMaybeGameEnded(room, nextMc);
       return;
     }
     case "MARK_INCORRECT": {
@@ -454,12 +475,26 @@ async function handleClientMessage(
         ...baseCc,
         phase: nextPhaseWhenClueFinishes(baseCc),
       };
-      await saveRoomState(room, nextCc);
-      broadcastSessionState(room, nextCc);
+      await saveSessionAndMaybeGameEnded(room, nextCc);
       return;
     }
     case "END_GAME": {
-      sendError(sender, "END_GAME is not implemented yet.");
+      const eg = await loadRoomState(room);
+      if (msg.actorId !== eg.hostId) {
+        sendError(sender, "Only the host can end the game.");
+        return;
+      }
+      if (eg.phase === "lobby") {
+        sendError(sender, "Start the game before ending it.");
+        return;
+      }
+      if (eg.phase === "game_over") {
+        sendError(sender, "The game is already over.");
+        return;
+      }
+
+      const nextEg = finalizeGameOverState(eg);
+      await saveSessionAndMaybeGameEnded(room, nextEg);
       return;
     }
   }

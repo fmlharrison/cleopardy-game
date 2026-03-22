@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ClueView } from "@/components/ClueView";
+import { EndGameLeaderboard } from "@/components/game/EndGameLeaderboard";
 import { GameBoardGrid } from "@/components/game/GameBoardGrid";
 import { GameScoreboard } from "@/components/game/GameScoreboard";
 import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
@@ -11,6 +12,7 @@ import type { RoomState } from "@/types/game";
 import type { ClientMessage } from "@/types/messages";
 
 import { getClueById } from "@/lib/board-clue";
+import { rankPlayers } from "@/lib/ranking";
 import {
   getPartySocketUrl,
   parseServerMessage,
@@ -226,6 +228,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     ws.send(stringifyClientMessage(msg));
   }, []);
 
+  const handleEndGame = useCallback(() => {
+    setActionError(null);
+    const hostId = readStoredId(STORAGE_KEYS.hostId);
+    const ws = wsRef.current;
+    if (!hostId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot end game: not connected or missing host id.");
+      return;
+    }
+    const msg: ClientMessage = { type: "END_GAME", actorId: hostId };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
   if (connectError && !roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
@@ -317,6 +331,10 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     (phase === "clue_open" || phase === "judging") &&
     roomState.currentClueId !== null;
 
+  const hostCanEndGame =
+    isAuthoritativeHost &&
+    (phase === "board" || phase === "clue_open" || phase === "judging");
+
   return (
     <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
       <header className="space-y-1">
@@ -343,6 +361,21 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         <p className="text-sm text-red-700 dark:text-red-300" role="alert">
           {actionError}
         </p>
+      ) : null}
+
+      {hostCanEndGame ? (
+        <div className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900/50">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+            End the session for everyone (unfinished clues stay unanswered).
+          </p>
+          <button
+            type="button"
+            onClick={handleEndGame}
+            className="self-start rounded-md border border-zinc-400 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 dark:border-zinc-500 dark:bg-zinc-800 dark:text-zinc-100"
+          >
+            End game
+          </button>
+        </div>
       ) : null}
 
       {isLobby ? (
@@ -496,12 +529,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {isGameOver ? (
-        <div className="space-y-4">
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            Final scores below. End-game leaderboard UI can be expanded here.
-          </p>
-          <GameScoreboard players={roomState.players} showConnection />
-        </div>
+        <EndGameLeaderboard rankings={rankPlayers(roomState.players)} />
       ) : null}
 
       <Link

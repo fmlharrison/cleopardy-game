@@ -1,6 +1,7 @@
 import type * as Party from "partykit/server";
 
-import type { RoomState } from "../src/types/game";
+import { rankPlayers } from "../src/lib/ranking";
+import type { Player, RoomState } from "../src/types/game";
 import type { ServerMessage } from "../src/types/messages";
 
 export const ROOM_STATE_STORAGE_KEY = "cleopardy:roomState";
@@ -103,5 +104,14 @@ export function sendError(connection: Party.Connection, message: string): void {
 
 export function broadcastBuzzLocked(room: Party.Room, playerId: string): void {
   const payload: ServerMessage = { type: "BUZZ_LOCKED", playerId };
+  room.broadcast(JSON.stringify(payload));
+}
+
+/** After `SESSION_STATE` with `phase: game_over`, optional explicit rankings (same order as `rankPlayers`). */
+export function broadcastGameEnded(room: Party.Room, players: Player[]): void {
+  const payload: ServerMessage = {
+    type: "GAME_ENDED",
+    rankings: rankPlayers(players),
+  };
   room.broadcast(JSON.stringify(payload));
 }
