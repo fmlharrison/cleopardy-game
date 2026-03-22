@@ -8,8 +8,28 @@ import {
   sendError,
   sendSessionState,
 } from "./room-helpers";
-import type { RoomState } from "../src/types/game";
+import type { Player, RoomState } from "../src/types/game";
 import type { ClientMessage } from "../src/types/messages";
+
+function normalizeDisplayName(name: string): string {
+  return name.trim();
+}
+
+function isDuplicatePlayerName(
+  players: Player[],
+  name: string,
+  excludePlayerId?: string,
+): boolean {
+  const n = normalizeDisplayName(name).toLowerCase();
+  if (!n) {
+    return false;
+  }
+  return players.some(
+    (p) =>
+      p.id !== excludePlayerId &&
+      normalizeDisplayName(p.name).toLowerCase() === n,
+  );
+}
 
 function messageToString(
   message: string | ArrayBuffer | ArrayBufferView,
@@ -59,15 +79,109 @@ async function handleClientMessage(
       return;
     }
     case "JOIN_SESSION": {
-      sendError(sender, "JOIN_SESSION is not implemented yet.");
+      const joinState = await loadRoomState(room);
+      if (joinState.hostId === null || joinState.board === null) {
+        sendError(
+          sender,
+          "Session not found or the host has not created it yet.",
+        );
+        return;
+      }
+      if (joinState.phase !== "lobby") {
+        sendError(sender, "This game has already started. Join is closed.");
+        return;
+      }
+
+      const displayName = normalizeDisplayName(msg.name);
+      if (!displayName) {
+        sendError(sender, "Name is required.");
+        return;
+      }
+
+      const existingIdx = joinState.players.findIndex(
+        (p) => p.id === msg.playerId,
+      );
+
+      if (existingIdx >= 0) {
+        const players = [...joinState.players];
+        const existing = players[existingIdx];
+        if (
+          isDuplicatePlayerName(joinState.players, displayName, msg.playerId) &&
+          normalizeDisplayName(existing.name).toLowerCase() !==
+            displayName.toLowerCase()
+        ) {
+          sendError(sender, "That name is already taken.");
+          return;
+        }
+        players[existingIdx] = {
+          ...existing,
+          name: displayName,
+          connected: true,
+        };
+        const nextJoin: RoomState = { ...joinState, players };
+        await saveRoomState(room, nextJoin);
+        broadcastSessionState(room, nextJoin);
+        return;
+      }
+
+      if (joinState.players.length >= 6) {
+        sendError(sender, "This room is full (6 players max).");
+        return;
+      }
+
+      if (isDuplicatePlayerName(joinState.players, displayName)) {
+        sendError(sender, "That name is already taken.");
+        return;
+      }
+
+      const joinOrder =
+        joinState.players.length === 0
+          ? 0
+          : Math.max(...joinState.players.map((p) => p.joinOrder)) + 1;
+
+      const newPlayer: Player = {
+        id: msg.playerId,
+        name: displayName,
+        score: 0,
+        connected: true,
+        joinOrder,
+      };
+
+      const nextJoin: RoomState = {
+        ...joinState,
+        players: [...joinState.players, newPlayer],
+      };
+      await saveRoomState(room, nextJoin);
+      broadcastSessionState(room, nextJoin);
       return;
     }
     case "RECONNECT_PLAYER": {
-      sendError(sender, "RECONNECT_PLAYER is not implemented yet.");
+      const rs = await loadRoomState(room);
+      const idx = rs.players.findIndex((p) => p.id === msg.playerId);
+      if (idx < 0) {
+        sendError(sender, "You are not in this session.");
+        return;
+      }
+      const players = [...rs.players];
+      players[idx] = { ...players[idx], connected: true };
+      const nextR: RoomState = { ...rs, players };
+      await saveRoomState(room, nextR);
+      broadcastSessionState(room, nextR);
       return;
     }
     case "START_GAME": {
-      sendError(sender, "START_GAME is not implemented yet.");
+      const sg = await loadRoomState(room);
+      if (msg.actorId !== sg.hostId) {
+        sendError(sender, "Only the host can start the game.");
+        return;
+      }
+      if (sg.phase !== "lobby") {
+        sendError(sender, "The game is not in the lobby phase.");
+        return;
+      }
+      const nextSg: RoomState = { ...sg, phase: "board" };
+      await saveRoomState(room, nextSg);
+      broadcastSessionState(room, nextSg);
       return;
     }
     case "OPEN_CLUE": {

@@ -20,6 +20,9 @@
 # production
 /build
 
+# partykit local durable state (dev)
+.partykit/
+
 # misc
 .DS_Store
 *.pem
