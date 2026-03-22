@@ -1,4 +1,4 @@
-import type { Board, Clue } from "@/types/game";
+import type { Board, Clue } from "../types/game";
 
 /** Resolve a clue from the board by id (ids are unique board-wide per MVP schema). */
 export function getClueById(
@@ -15,4 +15,15 @@ export function getClueById(
     }
   }
   return null;
+}
+
+/** All clue ids on the board (order: categories left-to-right, clues ascending by array order). */
+export function getBoardClueIds(board: Board): string[] {
+  const ids: string[] = [];
+  for (const category of board.categories) {
+    for (const clue of category.clues) {
+      ids.push(clue.id);
+    }
+  }
+  return ids;
 }

@@ -36,7 +36,8 @@ function messageRaw(data: string | ArrayBuffer | Blob): string | null {
   return null;
 }
 
-function sortPlayersByJoinOrder(players: RoomState["players"]) {
+/** Lobby roster display only (join order). Score standings use `sortPlayersByStandings`. */
+function sortLobbyRosterByJoinOrder(players: RoomState["players"]) {
   return [...players].sort((a, b) => a.joinOrder - b.joinOrder);
 }
 
@@ -279,7 +280,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     phase === "board" || phase === "clue_open" || phase === "judging";
   const isGameOver = phase === "game_over";
 
-  const sortedLobbyPlayers = sortPlayersByJoinOrder(roomState.players);
+  const sortedLobbyPlayers = sortLobbyRosterByJoinOrder(roomState.players);
   const hostIdStored = readStoredId(STORAGE_KEYS.hostId);
   const canHostStart =
     role === "host" &&

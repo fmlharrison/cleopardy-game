@@ -11,31 +11,21 @@ import {
   sendError,
   sendSessionState,
 } from "./room-helpers";
-import type { Board, Player, RoomState } from "../src/types/game";
+import { getBoardClueIds, getClueById } from "../src/lib/board-clue";
+import type { Player, RoomState } from "../src/types/game";
 import type { ClientMessage } from "../src/types/messages";
 
 function normalizeDisplayName(name: string): string {
   return name.trim();
 }
 
-function findClueOnBoard(board: Board, clueId: string) {
-  for (const category of board.categories) {
-    const clue = category.clues.find((c) => c.id === clueId);
-    if (clue) {
-      return clue;
-    }
-  }
-  return null;
-}
-
-function allClueIdsOnBoard(board: Board): string[] {
-  const ids: string[] = [];
-  for (const category of board.categories) {
-    for (const clue of category.clues) {
-      ids.push(clue.id);
-    }
-  }
-  return ids;
+/** Invariants expected whenever `phase === "board"` before opening a clue. */
+function boardPhaseCleanForNewClue(state: RoomState): boolean {
+  return (
+    state.currentClueId === null &&
+    state.buzzWinnerPlayerId === null &&
+    !state.buzzOpen
+  );
 }
 
 /** After updating `answeredClueIds`, choose board vs game over when leaving a clue. */
@@ -43,7 +33,7 @@ function nextPhaseWhenClueFinishes(state: RoomState): "board" | "game_over" {
   if (!state.board) {
     return "board";
   }
-  const ids = allClueIdsOnBoard(state.board);
+  const ids = getBoardClueIds(state.board);
   if (ids.length === 0) {
     return "board";
   }
@@ -148,6 +138,10 @@ async function handleClientMessage(
       }
       if (joinState.phase !== "lobby") {
         sendError(sender, "This game has already started. Join is closed.");
+        return;
+      }
+      if (joinState.hostId !== null && msg.playerId === joinState.hostId) {
+        sendError(sender, "That player id cannot join as a contestant.");
         return;
       }
 
@@ -275,7 +269,11 @@ async function handleClientMessage(
         sendError(sender, "No board is loaded for this session.");
         return;
       }
-      const clue = findClueOnBoard(oc.board, msg.clueId);
+      if (!boardPhaseCleanForNewClue(oc)) {
+        sendError(sender, "Finish the current clue before opening another.");
+        return;
+      }
+      const clue = getClueById(oc.board, msg.clueId);
       if (!clue) {
         sendError(sender, "That clue does not exist on this board.");
         return;
@@ -326,6 +324,17 @@ async function handleClientMessage(
         sendError(sender, "There is no active clue.");
         return;
       }
+      if (buzzState.answeredClueIds.includes(buzzState.currentClueId)) {
+        sendError(sender, "This clue is no longer open for buzzing.");
+        return;
+      }
+      if (
+        !buzzState.board ||
+        !getClueById(buzzState.board, buzzState.currentClueId)
+      ) {
+        sendError(sender, "Active clue is not on the board.");
+        return;
+      }
 
       const nextBuzz: RoomState = {
         ...buzzState,
@@ -360,7 +369,7 @@ async function handleClientMessage(
         sendError(sender, "There is no active clue.");
         return;
       }
-      const clueMc = findClueOnBoard(mc.board, mc.currentClueId);
+      const clueMc = getClueById(mc.board, mc.currentClueId);
       if (!clueMc) {
         sendError(sender, "Active clue is not on the board.");
         return;
@@ -441,12 +450,20 @@ async function handleClientMessage(
         sendError(sender, "There is no active clue.");
         return;
       }
+      if (!rb.board) {
+        sendError(sender, "No board is loaded for this session.");
+        return;
+      }
       if (rb.buzzWinnerPlayerId !== null) {
         sendError(sender, "Resolve or clear the current buzzer first.");
         return;
       }
-      if (rb.board && rb.answeredClueIds.includes(rb.currentClueId)) {
+      if (rb.answeredClueIds.includes(rb.currentClueId)) {
         sendError(sender, "That clue is already finished.");
+        return;
+      }
+      if (!getClueById(rb.board, rb.currentClueId)) {
+        sendError(sender, "Active clue is not on the board.");
         return;
       }
 
@@ -473,15 +490,17 @@ async function handleClientMessage(
         sendError(sender, "There is no active clue.");
         return;
       }
-      const clueCc = findClueOnBoard(cc.board, cc.currentClueId);
+      if (cc.answeredClueIds.includes(cc.currentClueId)) {
+        sendError(sender, "That clue is already finished.");
+        return;
+      }
+      const clueCc = getClueById(cc.board, cc.currentClueId);
       if (!clueCc) {
         sendError(sender, "Active clue is not on the board.");
         return;
       }
 
-      const answeredCc = cc.answeredClueIds.includes(cc.currentClueId)
-        ? cc.answeredClueIds
-        : [...cc.answeredClueIds, cc.currentClueId];
+      const answeredCc = [...cc.answeredClueIds, cc.currentClueId];
       const baseCc: RoomState = {
         ...cc,
         answeredClueIds: answeredCc,
@@ -518,9 +537,7 @@ async function handleClientMessage(
   }
 }
 
-/**
- * Cleopardy PartyKit room — typed message wiring; game rules are stubs.
- */
+/** Cleopardy PartyKit room — authoritative game state and validation. */
 export default class CleopardyRoom implements Party.Server {
   private readonly connections = new RoomConnectionTracker();
 

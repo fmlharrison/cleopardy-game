@@ -1,6 +1,10 @@
 import type { Board } from "../src/types/game";
 import type { ClientMessage } from "../src/types/messages";
 
+function nonEmptyTrimmedString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function isBoardLike(value: unknown): value is Board {
   if (!value || typeof value !== "object") {
     return false;
@@ -24,77 +28,90 @@ export function parseClientMessage(data: unknown): ClientMessage | null {
 
   switch (type) {
     case "HOST_CREATE_SESSION": {
-      if (typeof rec.hostId !== "string" || !isBoardLike(rec.board)) {
+      if (!nonEmptyTrimmedString(rec.hostId) || !isBoardLike(rec.board)) {
         return null;
       }
       return {
         type: "HOST_CREATE_SESSION",
-        hostId: rec.hostId,
+        hostId: rec.hostId.trim(),
         board: rec.board,
       };
     }
     case "JOIN_SESSION": {
-      if (typeof rec.playerId !== "string" || typeof rec.name !== "string") {
+      if (
+        !nonEmptyTrimmedString(rec.playerId) ||
+        typeof rec.name !== "string"
+      ) {
+        return null;
+      }
+      const name = rec.name.trim();
+      if (!name) {
         return null;
       }
       return {
         type: "JOIN_SESSION",
-        playerId: rec.playerId,
-        name: rec.name,
+        playerId: rec.playerId.trim(),
+        name,
       };
     }
     case "RECONNECT_HOST": {
-      if (typeof rec.hostId !== "string") {
+      if (!nonEmptyTrimmedString(rec.hostId)) {
         return null;
       }
-      return { type: "RECONNECT_HOST", hostId: rec.hostId };
+      return { type: "RECONNECT_HOST", hostId: rec.hostId.trim() };
     }
     case "RECONNECT_PLAYER": {
-      if (typeof rec.playerId !== "string") {
+      if (!nonEmptyTrimmedString(rec.playerId)) {
         return null;
       }
-      return { type: "RECONNECT_PLAYER", playerId: rec.playerId };
+      return { type: "RECONNECT_PLAYER", playerId: rec.playerId.trim() };
     }
     case "START_GAME": {
-      if (typeof rec.actorId !== "string") {
+      if (!nonEmptyTrimmedString(rec.actorId)) {
         return null;
       }
-      return { type: "START_GAME", actorId: rec.actorId };
+      return { type: "START_GAME", actorId: rec.actorId.trim() };
     }
     case "OPEN_CLUE": {
-      if (typeof rec.actorId !== "string" || typeof rec.clueId !== "string") {
+      if (
+        !nonEmptyTrimmedString(rec.actorId) ||
+        !nonEmptyTrimmedString(rec.clueId)
+      ) {
         return null;
       }
       return {
         type: "OPEN_CLUE",
-        actorId: rec.actorId,
-        clueId: rec.clueId,
+        actorId: rec.actorId.trim(),
+        clueId: rec.clueId.trim(),
       };
     }
     case "BUZZ": {
-      if (typeof rec.playerId !== "string") {
+      if (!nonEmptyTrimmedString(rec.playerId)) {
         return null;
       }
-      return { type: "BUZZ", playerId: rec.playerId };
+      return { type: "BUZZ", playerId: rec.playerId.trim() };
     }
     case "MARK_CORRECT":
     case "MARK_INCORRECT": {
-      if (typeof rec.actorId !== "string" || typeof rec.playerId !== "string") {
+      if (
+        !nonEmptyTrimmedString(rec.actorId) ||
+        !nonEmptyTrimmedString(rec.playerId)
+      ) {
         return null;
       }
       return {
         type,
-        actorId: rec.actorId,
-        playerId: rec.playerId,
+        actorId: rec.actorId.trim(),
+        playerId: rec.playerId.trim(),
       } as ClientMessage;
     }
     case "REOPEN_BUZZ":
     case "CLOSE_CLUE":
     case "END_GAME": {
-      if (typeof rec.actorId !== "string") {
+      if (!nonEmptyTrimmedString(rec.actorId)) {
         return null;
       }
-      return { type, actorId: rec.actorId } as ClientMessage;
+      return { type, actorId: rec.actorId.trim() } as ClientMessage;
     }
     default:
       return null;
