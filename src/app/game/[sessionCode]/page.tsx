@@ -45,5 +45,11 @@ export default async function GameSessionPage({
     );
   }
 
-  return <GameRoomClient sessionCode={sessionCode} role={role} />;
+  return (
+    <GameRoomClient
+      key={`${sessionCode}-${role}`}
+      sessionCode={sessionCode}
+      role={role}
+    />
+  );
 }
