@@ -10,15 +10,20 @@ npm install
 
 ## Run locally (realtime)
 
-Use **two terminals**. PartyKit must be up before or as soon as you open a game room (WebSocket to `ws://…:1999/…`).
+**One command** (PartyKit + Next.js in the same terminal):
 
 ```bash
-# Terminal 1 — PartyKit (port 1999, see partykit.json)
-npm run party:dev
-
-# Terminal 2 — Next.js
-npm run dev
+npm run dev:all
 ```
+
+Or use **two terminals** if you prefer separate logs:
+
+```bash
+npm run party:dev   # port 1999 (partykit.json)
+npm run dev         # Next.js
+```
+
+PartyKit must be running before or as soon as you open a game room (WebSocket to `ws://…:1999/…`).
 
 Open [http://localhost:3000](http://localhost:3000).
 
