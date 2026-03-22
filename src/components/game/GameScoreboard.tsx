@@ -1,23 +1,23 @@
+import { sortPlayersByStandings } from "@/lib/ranking";
 import type { Player } from "@/types/game";
 
 export type GameScoreboardProps = {
+  /** Latest roster from `RoomState.players` (e.g. after each `SESSION_STATE`). */
   players: Player[];
   showConnection?: boolean;
   /** Highlights this player’s row (e.g. buzz winner). */
   emphasizePlayerId?: string | null;
 };
 
+/**
+ * Live / final standings: sorted by score (desc), then join order (asc). Connection comes from `Player.connected`.
+ */
 export function GameScoreboard({
   players,
   showConnection = false,
   emphasizePlayerId = null,
 }: GameScoreboardProps) {
-  const sorted = [...players].sort((a, b) => {
-    if (b.score !== a.score) {
-      return b.score - a.score;
-    }
-    return a.joinOrder - b.joinOrder;
-  });
+  const sorted = sortPlayersByStandings(players);
 
   return (
     <section aria-labelledby="scoreboard-heading" className="space-y-2">
