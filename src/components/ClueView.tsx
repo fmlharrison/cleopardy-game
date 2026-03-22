@@ -42,15 +42,17 @@ function buzzSummaryLine(
   buzzWinnerPlayerId: string | null,
   players: Player[],
 ): string {
-  if (phase === "judging") {
-    return "Buzzing is closed — the host is judging.";
-  }
   const winnerName = playerName(players, buzzWinnerPlayerId);
+  if (phase === "judging") {
+    return winnerName
+      ? `${winnerName} buzzed in first. The host is judging their answer.`
+      : "The host is judging.";
+  }
   if (winnerName) {
     return `${winnerName} buzzed in first.`;
   }
   if (buzzOpen) {
-    return "Buzzing is open — first correct buzz locks in.";
+    return "Buzzing is open — first buzz on the server wins.";
   }
   return "Buzzing is closed.";
 }
@@ -125,6 +127,22 @@ export function ClueView({
               </span>
             </p>
           </div>
+
+          {winnerName && buzzWinnerPlayerId ? (
+            <div
+              className="rounded-lg border-2 border-amber-500 bg-amber-100 px-4 py-3 dark:border-amber-400 dark:bg-amber-950/60"
+              role="status"
+              aria-live="polite"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-200">
+                First buzz
+              </p>
+              <p className="mt-1 text-lg font-bold text-amber-950 dark:text-amber-50">
+                {winnerName}
+                {isSelfWinner && viewRole === "player" ? " (you)" : ""}
+              </p>
+            </div>
+          ) : null}
 
           {clue ? (
             <div className="space-y-3">
@@ -246,7 +264,11 @@ export function ClueView({
         </div>
 
         <aside className="w-full shrink-0 lg:w-56">
-          <GameScoreboard players={players} showConnection />
+          <GameScoreboard
+            players={players}
+            showConnection
+            emphasizePlayerId={buzzWinnerPlayerId}
+          />
         </aside>
       </div>
     </section>

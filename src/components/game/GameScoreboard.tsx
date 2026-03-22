@@ -3,11 +3,14 @@ import type { Player } from "@/types/game";
 export type GameScoreboardProps = {
   players: Player[];
   showConnection?: boolean;
+  /** Highlights this player’s row (e.g. buzz winner). */
+  emphasizePlayerId?: string | null;
 };
 
 export function GameScoreboard({
   players,
   showConnection = false,
+  emphasizePlayerId = null,
 }: GameScoreboardProps) {
   const sorted = [...players].sort((a, b) => {
     if (b.score !== a.score) {
@@ -31,7 +34,11 @@ export function GameScoreboard({
           {sorted.map((p) => (
             <li
               key={p.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+              className={`flex items-center justify-between gap-2 px-3 py-2 text-sm ${
+                emphasizePlayerId !== null && p.id === emphasizePlayerId
+                  ? "bg-amber-100 ring-2 ring-inset ring-amber-500 dark:bg-amber-950/50 dark:ring-amber-400"
+                  : ""
+              }`}
             >
               <div className="min-w-0 flex flex-col">
                 <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">

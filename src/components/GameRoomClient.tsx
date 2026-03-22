@@ -151,6 +151,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     ws.send(stringifyClientMessage(msg));
   }, []);
 
+  const handleBuzz = useCallback(() => {
+    setActionError(null);
+    const playerId = readStoredId(STORAGE_KEYS.playerId);
+    const ws = wsRef.current;
+    if (!playerId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot buzz: not connected or missing player id.");
+      return;
+    }
+    const msg: ClientMessage = { type: "BUZZ", playerId };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
   if (connectError && !roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
@@ -217,7 +229,8 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     wsReady &&
     phase === "clue_open" &&
     roomState.buzzOpen &&
-    roomState.buzzWinnerPlayerId === null;
+    roomState.buzzWinnerPlayerId === null &&
+    playerIdStored !== null;
 
   return (
     <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
@@ -349,13 +362,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 buzzWinnerPlayerId={roomState.buzzWinnerPlayerId}
                 selfPlayerId={playerIdStored}
                 buzzEligible={playerBuzzEligible}
-                onBuzz={
-                  playerBuzzEligible
-                    ? () => {
-                        /* BUZZ client message — wire in PartyKit next */
-                      }
-                    : undefined
-                }
+                onBuzz={playerBuzzEligible ? handleBuzz : undefined}
               />
             ) : null}
             {isCluePhase && !openClue ? (

@@ -100,3 +100,8 @@ export function sendError(connection: Party.Connection, message: string): void {
   const payload: ServerMessage = { type: "ERROR", message };
   connection.send(JSON.stringify(payload));
 }
+
+export function broadcastBuzzLocked(room: Party.Room, playerId: string): void {
+  const payload: ServerMessage = { type: "BUZZ_LOCKED", playerId };
+  room.broadcast(JSON.stringify(payload));
+}

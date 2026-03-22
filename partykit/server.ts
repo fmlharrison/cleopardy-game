@@ -2,6 +2,7 @@ import type * as Party from "partykit/server";
 
 import { parseClientMessage } from "./parse-client-message";
 import {
+  broadcastBuzzLocked,
   broadcastSessionState,
   loadRoomState,
   saveRoomState,
@@ -233,7 +234,45 @@ async function handleClientMessage(
       return;
     }
     case "BUZZ": {
-      sendError(sender, "BUZZ is not implemented yet.");
+      const buzzState = await loadRoomState(room);
+      const rosterIdx = buzzState.players.findIndex(
+        (p) => p.id === msg.playerId,
+      );
+      if (rosterIdx < 0) {
+        sendError(sender, "You are not a player in this session.");
+        return;
+      }
+      const rosterPlayer = buzzState.players[rosterIdx];
+      if (!rosterPlayer.connected) {
+        sendError(sender, "Reconnect before buzzing.");
+        return;
+      }
+      if (buzzState.phase !== "clue_open") {
+        sendError(sender, "Buzzing is not open.");
+        return;
+      }
+      if (!buzzState.buzzOpen) {
+        sendError(sender, "Buzzing is closed.");
+        return;
+      }
+      if (buzzState.buzzWinnerPlayerId !== null) {
+        sendError(sender, "Someone already buzzed in.");
+        return;
+      }
+      if (buzzState.currentClueId === null) {
+        sendError(sender, "There is no active clue.");
+        return;
+      }
+
+      const nextBuzz: RoomState = {
+        ...buzzState,
+        phase: "judging",
+        buzzWinnerPlayerId: msg.playerId,
+        buzzOpen: false,
+      };
+      await saveRoomState(room, nextBuzz);
+      broadcastSessionState(room, nextBuzz);
+      broadcastBuzzLocked(room, msg.playerId);
       return;
     }
     case "MARK_CORRECT":
