@@ -9,6 +9,7 @@ import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
 import type { RoomState } from "@/types/game";
 import type { ClientMessage } from "@/types/messages";
 
+import { getClueById } from "@/lib/board-clue";
 import {
   getPartySocketUrl,
   parseServerMessage,
@@ -133,6 +134,22 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     ws.send(stringifyClientMessage(msg));
   }, []);
 
+  const handleHostOpenClue = useCallback((clueId: string) => {
+    setActionError(null);
+    const hostId = readStoredId(STORAGE_KEYS.hostId);
+    const ws = wsRef.current;
+    if (!hostId || !ws || ws.readyState !== WebSocket.OPEN) {
+      setActionError("Cannot open clue: not connected or missing host id.");
+      return;
+    }
+    const msg: ClientMessage = {
+      type: "OPEN_CLUE",
+      actorId: hostId,
+      clueId,
+    };
+    ws.send(stringifyClientMessage(msg));
+  }, []);
+
   if (connectError && !roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
@@ -171,6 +188,25 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     isLobby &&
     hostIdStored !== null &&
     hostIdStored === roomState.hostId;
+
+  const hostCanSelectClues =
+    role === "host" &&
+    wsReady &&
+    phase === "board" &&
+    hostIdStored !== null &&
+    hostIdStored === roomState.hostId;
+
+  const boardCaption =
+    role === "host" && hostCanSelectClues
+      ? "Click a dollar amount to open that clue."
+      : role === "host"
+        ? "You can open clues when the session is on the board phase."
+        : "Watch the board — the host will open clues.";
+
+  const openClue =
+    roomState.board && roomState.currentClueId
+      ? getClueById(roomState.board, roomState.currentClueId)
+      : null;
 
   return (
     <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
@@ -293,9 +329,20 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
                 role="status"
               >
-                {phase === "clue_open"
-                  ? "A clue is open (full clue UI not built yet)."
-                  : null}
+                {phase === "clue_open" ? (
+                  <>
+                    {openClue ? (
+                      <>
+                        <span className="font-medium">
+                          For ${openClue.value}:
+                        </span>{" "}
+                        {openClue.question}
+                      </>
+                    ) : (
+                      "A clue is open (could not resolve clue text)."
+                    )}
+                  </>
+                ) : null}
                 {phase === "judging"
                   ? "Host is judging an answer (judging UI not built yet)."
                   : null}
@@ -305,20 +352,16 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               <GameBoardGrid
                 board={roomState.board}
                 answeredClueIds={roomState.answeredClueIds}
+                currentClueId={roomState.currentClueId}
+                hostCanSelectClues={hostCanSelectClues}
+                onHostSelectClue={
+                  hostCanSelectClues ? handleHostOpenClue : undefined
+                }
+                caption={boardCaption}
               />
             ) : (
               <p className="text-sm text-red-700 dark:text-red-300">
                 Board data is missing from session state.
-              </p>
-            )}
-            {role === "host" ? (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                As host, you will open clues from here next; cells are not
-                clickable yet.
-              </p>
-            ) : (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                Watch for the host to open a clue.
               </p>
             )}
           </div>

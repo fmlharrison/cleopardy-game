@@ -8,11 +8,21 @@ import {
   sendError,
   sendSessionState,
 } from "./room-helpers";
-import type { Player, RoomState } from "../src/types/game";
+import type { Board, Player, RoomState } from "../src/types/game";
 import type { ClientMessage } from "../src/types/messages";
 
 function normalizeDisplayName(name: string): string {
   return name.trim();
+}
+
+function findClueOnBoard(board: Board, clueId: string) {
+  for (const category of board.categories) {
+    const clue = category.clues.find((c) => c.id === clueId);
+    if (clue) {
+      return clue;
+    }
+  }
+  return null;
 }
 
 function isDuplicatePlayerName(
@@ -185,7 +195,41 @@ async function handleClientMessage(
       return;
     }
     case "OPEN_CLUE": {
-      sendError(sender, "OPEN_CLUE is not implemented yet.");
+      const oc = await loadRoomState(room);
+      if (msg.actorId !== oc.hostId) {
+        sendError(sender, "Only the host can open a clue.");
+        return;
+      }
+      if (oc.phase !== "board") {
+        sendError(
+          sender,
+          "Clues can only be opened from the board (finish the current clue first).",
+        );
+        return;
+      }
+      if (!oc.board) {
+        sendError(sender, "No board is loaded for this session.");
+        return;
+      }
+      const clue = findClueOnBoard(oc.board, msg.clueId);
+      if (!clue) {
+        sendError(sender, "That clue does not exist on this board.");
+        return;
+      }
+      if (oc.answeredClueIds.includes(msg.clueId)) {
+        sendError(sender, "That clue has already been answered.");
+        return;
+      }
+
+      const nextOc: RoomState = {
+        ...oc,
+        phase: "clue_open",
+        currentClueId: msg.clueId,
+        buzzOpen: true,
+        buzzWinnerPlayerId: null,
+      };
+      await saveRoomState(room, nextOc);
+      broadcastSessionState(room, nextOc);
       return;
     }
     case "BUZZ": {
