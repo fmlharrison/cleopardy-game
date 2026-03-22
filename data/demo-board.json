@@ -1,0 +1,59 @@
+{
+  "title": "Demo board",
+  "categories": [
+    {
+      "id": "cat-history",
+      "name": "History",
+      "clues": [
+        {
+          "id": "clue-h-200",
+          "value": 200,
+          "question": "This river flows through Cairo.",
+          "answer": "What is the Nile?"
+        },
+        {
+          "id": "clue-h-400",
+          "value": 400,
+          "question": "He crossed the Rubicon in 49 BC.",
+          "answer": "Who is Julius Caesar?"
+        }
+      ]
+    },
+    {
+      "id": "cat-science",
+      "name": "Science",
+      "clues": [
+        {
+          "id": "clue-s-200",
+          "value": 200,
+          "question": "Plants use it for photosynthesis.",
+          "answer": "What is sunlight?"
+        },
+        {
+          "id": "clue-s-400",
+          "value": 400,
+          "question": "This particle has no electric charge.",
+          "answer": "What is a neutron?"
+        }
+      ]
+    },
+    {
+      "id": "cat-geography",
+      "name": "Geography",
+      "clues": [
+        {
+          "id": "clue-s-200",
+          "value": 200,
+          "question": "This country is where the Eiffel Tower is located.",
+          "answer": "What is France?"
+        },
+        {
+          "id": "clue-s-400",
+          "value": 400,
+          "question": "This city is where the Statue of Liberty is located.",
+          "answer": "What is New York?"
+        }
+      ]
+    }
+  ]
+}

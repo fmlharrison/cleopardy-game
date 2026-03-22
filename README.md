@@ -1,44 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cleopardy (MVP)
 
-## Getting Started
+Browser Jeopardy-style game: **Next.js** UI + **PartyKit** realtime room state.
 
-Run **both** the Next.js app and PartyKit while developing realtime features (host “Create game”, game room, etc.):
+## Install
 
 ```bash
-# Terminal 1 — PartyKit (defaults to port 1999, see partykit.json)
+npm install
+```
+
+## Run locally (realtime)
+
+Use **two terminals**. PartyKit must be up before or as soon as you open a game room (WebSocket to `ws://…:1999/…`).
+
+```bash
+# Terminal 1 — PartyKit (port 1999, see partykit.json)
 npm run party:dev
 
 # Terminal 2 — Next.js
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). The client connects to **`ws://…/parties/main/<room>`** — PartyKit registers the default `server.ts` under party id **`main`**, not under `partykit.json`’s `name`. If the WebSocket fails, confirm PartyKit is on port **1999** (or set `NEXT_PUBLIC_PARTYKIT_HOST` / `PORT` in `.env.local`). For **LAN** access (`http://192.168.x.x:3000`), the client uses that host for port 1999 as well.
+Open [http://localhost:3000](http://localhost:3000).
 
-See `.env.example` for optional overrides.
+### Env / networking
 
-### Next.js only (no realtime)
+- Default: the client talks to PartyKit on **`localhost:1999`** (or the same **LAN hostname** as the page on port **1999**).
+- WebSocket path uses party id **`main`** (PartyKit’s default for `server.ts`), not necessarily `name` in `partykit.json`.
+- Optional overrides: copy **`.env.example`** → **`.env.local`** and set `NEXT_PUBLIC_PARTYKIT_HOST`, `NEXT_PUBLIC_PARTYKIT_PORT`, or `NEXT_PUBLIC_PARTYKIT_PARTY` if your setup differs.
+
+## Demo board JSON
+
+A small valid board lives at **`data/demo-board.json`**. On **`/host`**, paste the JSON or use **Upload a board file** to load it, then validate and create the session. Schema: `src/schemas/board-schema.ts` (unique clue ids across the board, 1–6 categories, 1–5 clues per category).
+
+## Host flow
+
+1. Go to **`/host`**.
+2. Create a session with a board (use **`data/demo-board.json`** for a quick test).
+3. Open the game link you get (includes **`?role=host`**). Keep this tab/device as host — `localStorage` stores the host id.
+
+## Join flow
+
+1. Go to **`/join`**.
+2. Enter the session code and display name.
+3. Open the game link (**`?role=player`**). `localStorage` stores the player id for reconnect.
+
+## Next.js only (no WebSocket)
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Lobby/game features that need PartyKit will not work until **`npm run party:dev`** is running.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Bootstrapped with [create-next-app](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
