@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ClueView } from "@/components/ClueView";
 import { GameBoardGrid } from "@/components/game/GameBoardGrid";
 import { GameScoreboard } from "@/components/game/GameScoreboard";
 import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
@@ -208,6 +209,16 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ? getClueById(roomState.board, roomState.currentClueId)
       : null;
 
+  const playerIdStored = readStoredId(STORAGE_KEYS.playerId);
+  const isCluePhase = phase === "clue_open" || phase === "judging";
+
+  const playerBuzzEligible =
+    role === "player" &&
+    wsReady &&
+    phase === "clue_open" &&
+    roomState.buzzOpen &&
+    roomState.buzzWinnerPlayerId === null;
+
   return (
     <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
       <header className="space-y-1">
@@ -324,28 +335,35 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       {isBoardPhase ? (
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <div className="min-w-0 flex-1 space-y-4">
-            {phase !== "board" ? (
+            {isCluePhase && openClue ? (
+              <ClueView
+                phase={phase === "judging" ? "judging" : "clue_open"}
+                viewRole={role}
+                clue={{
+                  value: openClue.value,
+                  question: openClue.question,
+                  answer: role === "host" ? openClue.answer : "",
+                }}
+                players={roomState.players}
+                buzzOpen={roomState.buzzOpen}
+                buzzWinnerPlayerId={roomState.buzzWinnerPlayerId}
+                selfPlayerId={playerIdStored}
+                buzzEligible={playerBuzzEligible}
+                onBuzz={
+                  playerBuzzEligible
+                    ? () => {
+                        /* BUZZ client message — wire in PartyKit next */
+                      }
+                    : undefined
+                }
+              />
+            ) : null}
+            {isCluePhase && !openClue ? (
               <p
-                className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"
-                role="status"
+                className="text-sm text-red-700 dark:text-red-300"
+                role="alert"
               >
-                {phase === "clue_open" ? (
-                  <>
-                    {openClue ? (
-                      <>
-                        <span className="font-medium">
-                          For ${openClue.value}:
-                        </span>{" "}
-                        {openClue.question}
-                      </>
-                    ) : (
-                      "A clue is open (could not resolve clue text)."
-                    )}
-                  </>
-                ) : null}
-                {phase === "judging"
-                  ? "Host is judging an answer (judging UI not built yet)."
-                  : null}
+                A clue should be active but clue data is missing.
               </p>
             ) : null}
             {roomState.board ? (
@@ -365,9 +383,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               </p>
             )}
           </div>
-          <aside className="w-full shrink-0 lg:w-64">
-            <GameScoreboard players={roomState.players} showConnection />
-          </aside>
+          {phase === "board" ? (
+            <aside className="w-full shrink-0 lg:w-64">
+              <GameScoreboard players={roomState.players} showConnection />
+            </aside>
+          ) : null}
         </div>
       ) : null}
 
