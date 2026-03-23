@@ -121,46 +121,69 @@ export function HostPageClient() {
 
   return (
     <main className={`${ui.page} ${ui.pageHost} ${ui.stackLoose}`}>
-      <div>
+      <header className="border-b border-zinc-200 pb-8 dark:border-zinc-800">
+        <p className={ui.eyebrow}>Host a session</p>
         <h1 className={ui.h1}>Host</h1>
         <p className={ui.lead}>
-          Import board JSON, validate with the shared schema, then create a
-          PartyKit session. Raw editor text and the validated board are kept
-          separate—editing clears the validated board until you validate again.
+          Import board JSON, validate it, then create a PartyKit room. Editing
+          the text clears validation until you run{" "}
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+            Validate board
+          </span>{" "}
+          again.
         </p>
+      </header>
+
+      <div className="flex flex-col gap-8">
+        <div className="space-y-2">
+          <h2 className={ui.sectionTitle}>Board setup</h2>
+          <p className={ui.helper}>
+            Upload or paste JSON, then validate. Preview updates after a
+            successful check.
+          </p>
+        </div>
+
+        <div className={`${ui.surfacePanel} space-y-8 p-5 sm:p-6`}>
+          <JsonImportForm
+            rawJson={rawJson}
+            onRawJsonChange={handleRawJsonChange}
+            onValidate={handleValidate}
+            onLoadRawJson={handleLoadRawJson}
+          />
+          <div className="border-t border-zinc-200 pt-8 dark:border-zinc-700">
+            <BoardValidationSection validation={validation} />
+          </div>
+          <div className="border-t border-zinc-200 pt-8 dark:border-zinc-700">
+            <BoardPreviewSection board={validatedBoard} />
+          </div>
+        </div>
       </div>
 
-      <JsonImportForm
-        rawJson={rawJson}
-        onRawJsonChange={handleRawJsonChange}
-        onValidate={handleValidate}
-        onLoadRawJson={handleLoadRawJson}
-      />
+      <section
+        className="flex flex-col gap-5 border-t border-zinc-200 pt-10 dark:border-zinc-800"
+        aria-labelledby="create-heading"
+      >
+        {createPending ? (
+          <StatusBanner variant="info" title="Creating session">
+            <p>
+              Contacting PartyKit and registering your board. This usually takes
+              a moment.
+            </p>
+          </StatusBanner>
+        ) : null}
 
-      <BoardValidationSection validation={validation} />
+        {createError ? (
+          <StatusBanner variant="error" title="Could not create game">
+            <p>{createError}</p>
+          </StatusBanner>
+        ) : null}
 
-      <BoardPreviewSection board={validatedBoard} />
-
-      {createPending ? (
-        <StatusBanner variant="info" title="Creating session">
-          <p>
-            Contacting PartyKit and registering your board. This usually takes a
-            moment.
-          </p>
-        </StatusBanner>
-      ) : null}
-
-      {createError ? (
-        <StatusBanner variant="error" title="Could not create game">
-          <p>{createError}</p>
-        </StatusBanner>
-      ) : null}
-
-      <CreateGamePlaceholderButton
-        disabled={validatedBoard === null}
-        onCreateGame={handleCreateGame}
-        isLoading={createPending}
-      />
+        <CreateGamePlaceholderButton
+          disabled={validatedBoard === null}
+          onCreateGame={handleCreateGame}
+          isLoading={createPending}
+        />
+      </section>
 
       <Link href="/" className={ui.linkBack}>
         ← Home

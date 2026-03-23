@@ -78,71 +78,76 @@ export function JoinPageClient() {
 
   return (
     <main className={`${ui.page} ${ui.pageNarrow} ${ui.stack}`}>
-      <div>
+      <header className="space-y-3">
+        <p className={ui.eyebrow}>Join a session</p>
         <h1 className={ui.h1}>Join</h1>
         <p className={ui.lead}>
-          Enter the session code from your host and your display name.
+          Enter the six-character code from your host and the name you want on
+          the board.
         </p>
+      </header>
+
+      <div className={ui.formCard}>
+        <h2 className={`${ui.sectionTitle} mb-6`}>Your details</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="join-name" className={ui.formLabel}>
+              Display name
+            </label>
+            <input
+              id="join-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoComplete="nickname"
+              className={ui.input}
+              maxLength={40}
+              disabled={pending}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="join-code" className={ui.formLabel}>
+              Session code
+            </label>
+            <input
+              id="join-code"
+              type="text"
+              value={sessionCodeInput}
+              onChange={(e) =>
+                setSessionCodeInput(e.target.value.toUpperCase())
+              }
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={6}
+              placeholder="ABCD12"
+              className={`${ui.input} font-mono uppercase tracking-widest`}
+              disabled={pending}
+              aria-describedby="join-code-hint"
+            />
+            <p id="join-code-hint" className={ui.helper}>
+              Six characters from the host (letters and digits; shown uppercase
+              as you type).
+            </p>
+          </div>
+
+          {error ? (
+            <StatusBanner variant="error" title={joinErrorTitle(error)}>
+              <p>{error}</p>
+            </StatusBanner>
+          ) : null}
+
+          <div className="pt-1">
+            <button
+              type="submit"
+              disabled={pending}
+              className={`${ui.btnPrimary} w-full sm:w-auto`}
+            >
+              {pending ? "Connecting to session…" : "Join game"}
+            </button>
+          </div>
+        </form>
       </div>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="join-name"
-            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-          >
-            Your name
-          </label>
-          <input
-            id="join-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoComplete="nickname"
-            className={ui.input}
-            maxLength={40}
-            disabled={pending}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="join-code"
-            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
-          >
-            Session code
-          </label>
-          <input
-            id="join-code"
-            type="text"
-            value={sessionCodeInput}
-            onChange={(e) => setSessionCodeInput(e.target.value.toUpperCase())}
-            autoComplete="off"
-            spellCheck={false}
-            maxLength={6}
-            placeholder="ABCD12"
-            className={`${ui.input} font-mono uppercase tracking-widest`}
-            disabled={pending}
-          />
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Letters and digits only (shown uppercase as you type).
-          </p>
-        </div>
-
-        {error ? (
-          <StatusBanner variant="error" title={joinErrorTitle(error)}>
-            <p>{error}</p>
-          </StatusBanner>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={pending}
-          className={`${ui.btnPrimary} w-full sm:w-auto`}
-        >
-          {pending ? "Connecting to session…" : "Join game"}
-        </button>
-      </form>
 
       <Link href="/" className={ui.linkBack}>
         ← Home

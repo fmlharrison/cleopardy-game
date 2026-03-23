@@ -68,10 +68,19 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   const [connectError, setConnectError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [hasReceivedLiveState, setHasReceivedLiveState] = useState(false);
+  /** Avoid reading localStorage during SSR; identity warnings only after mount. */
+  const [hasHydrated, setHasHydrated] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const roomStateRef = useRef<RoomState | null>(null);
   /** Mirrors `hasReceivedLiveState` for `onclose` (avoids stale closures). */
   const receivedLiveStateRef = useRef(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      setHasHydrated(true);
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     roomStateRef.current = roomState;
@@ -298,10 +307,14 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     );
   }
 
-  const hostIdForLoad = readStoredId(STORAGE_KEYS.hostId);
-  const playerIdForLoad = readStoredId(STORAGE_KEYS.playerId);
-  const missingHostIdentity = role === "host" && !hostIdForLoad;
-  const missingPlayerIdentity = role === "player" && !playerIdForLoad;
+  const missingHostIdentity =
+    hasHydrated &&
+    role === "host" &&
+    readStoredId(STORAGE_KEYS.hostId) === null;
+  const missingPlayerIdentity =
+    hasHydrated &&
+    role === "player" &&
+    readStoredId(STORAGE_KEYS.playerId) === null;
 
   if (!roomState) {
     return (
