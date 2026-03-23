@@ -11,13 +11,13 @@ export function EndGameLeaderboard({ rankings }: EndGameLeaderboardProps) {
     <section aria-labelledby="endgame-heading" className="space-y-6">
       <h2
         id="endgame-heading"
-        className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
+        className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100"
       >
         Final results
       </h2>
 
       {winner ? (
-        <div className="rounded-lg border border-amber-400/80 bg-amber-50 px-4 py-3 dark:border-amber-600/50 dark:bg-amber-950/40">
+        <div className="rounded-xl border border-amber-400/80 bg-amber-50 px-4 py-4 shadow-sm dark:border-amber-600/50 dark:bg-amber-950/40">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-200">
             Winner
           </p>
@@ -39,7 +39,7 @@ export function EndGameLeaderboard({ rankings }: EndGameLeaderboardProps) {
           <h3 className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Leaderboard
           </h3>
-          <ol className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+          <ol className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 shadow-sm dark:divide-zinc-700 dark:border-zinc-700">
             {rankings.map((r) => (
               <li
                 key={r.playerId}

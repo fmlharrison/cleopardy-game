@@ -35,7 +35,7 @@ export function StatusBanner({
 
   return (
     <div
-      className={`rounded-md border px-3 py-2 text-sm ${variantClass[variant]} ${className}`}
+      className={`rounded-lg border px-3 py-2.5 text-sm leading-snug ${variantClass[variant]} ${className}`}
       role={role}
     >
       {title ? <p className="font-medium">{title}</p> : null}

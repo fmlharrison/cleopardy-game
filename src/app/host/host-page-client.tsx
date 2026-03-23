@@ -12,6 +12,7 @@ import { StatusBanner } from "@/components/ui/StatusBanner";
 import { createHostSession } from "@/lib/create-host-session";
 import { getOrCreateStoredId, STORAGE_KEYS } from "@/lib/ids";
 import { generateSessionCode } from "@/lib/session-code";
+import { ui } from "@/lib/ui";
 import { validateBoardJson } from "@/lib/validate-board-json";
 import type { Board } from "@/types/game";
 import type { BoardImportValidation } from "@/types/board-import";
@@ -119,10 +120,10 @@ export function HostPageClient() {
   }, [validatedBoard, router]);
 
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-10 px-6 py-16">
+    <main className={`${ui.page} ${ui.pageHost} ${ui.stackLoose}`}>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Host</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <h1 className={ui.h1}>Host</h1>
+        <p className={ui.lead}>
           Import board JSON, validate with the shared schema, then create a
           PartyKit session. Raw editor text and the validated board are kept
           separate—editing clears the validated board until you validate again.
@@ -161,11 +162,8 @@ export function HostPageClient() {
         isLoading={createPending}
       />
 
-      <Link
-        href="/"
-        className="text-sm font-medium text-zinc-700 underline dark:text-zinc-300"
-      >
-        ← Back
+      <Link href="/" className={ui.linkBack}>
+        ← Home
       </Link>
     </main>
   );

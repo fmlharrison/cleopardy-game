@@ -8,6 +8,7 @@ import { StatusBanner } from "@/components/ui/StatusBanner";
 import { joinErrorTitle } from "@/lib/join-error-title";
 import { getOrCreateStoredId, STORAGE_KEYS } from "@/lib/ids";
 import { joinPlayerSession } from "@/lib/join-player-session";
+import { ui } from "@/lib/ui";
 import { isValidSessionCode, normalizeSessionCode } from "@/lib/session-code";
 
 export function JoinPageClient() {
@@ -76,15 +77,15 @@ export function JoinPageClient() {
   );
 
   return (
-    <main className="mx-auto flex min-h-full max-w-lg flex-col gap-8 px-6 py-16">
+    <main className={`${ui.page} ${ui.pageNarrow} ${ui.stack}`}>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Join</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <h1 className={ui.h1}>Join</h1>
+        <p className={ui.lead}>
           Enter the session code from your host and your display name.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="join-name"
@@ -98,7 +99,7 @@ export function JoinPageClient() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="nickname"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-950"
+            className={ui.input}
             maxLength={40}
             disabled={pending}
           />
@@ -120,7 +121,7 @@ export function JoinPageClient() {
             spellCheck={false}
             maxLength={6}
             placeholder="ABCD12"
-            className="font-mono uppercase rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm tracking-widest dark:border-zinc-600 dark:bg-zinc-950"
+            className={`${ui.input} font-mono uppercase tracking-widest`}
             disabled={pending}
           />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -137,17 +138,14 @@ export function JoinPageClient() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+          className={`${ui.btnPrimary} w-full sm:w-auto`}
         >
           {pending ? "Connecting to session…" : "Join game"}
         </button>
       </form>
 
-      <Link
-        href="/"
-        className="text-sm font-medium text-zinc-700 underline dark:text-zinc-300"
-      >
-        ← Back
+      <Link href="/" className={ui.linkBack}>
+        ← Home
       </Link>
     </main>
   );

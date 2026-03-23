@@ -14,6 +14,7 @@ import type { ClientMessage } from "@/types/messages";
 
 import { getClueById } from "@/lib/board-clue";
 import { rankPlayers } from "@/lib/ranking";
+import { ui } from "@/lib/ui";
 import {
   getPartySocketUrl,
   parseServerMessage,
@@ -282,18 +283,15 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
 
   if (connectError && !roomState) {
     return (
-      <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
-        <h1 className="text-xl font-semibold tracking-tight">Game</h1>
+      <main className={`${ui.page} ${ui.pageNarrow} gap-6`}>
+        <h1 className={ui.h1}>Game</h1>
         <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
           Session: {sessionCode}
         </p>
         <StatusBanner variant="error" title="Could not connect">
           <p>{connectError}</p>
         </StatusBanner>
-        <Link
-          href="/"
-          className="text-sm font-medium text-zinc-700 underline dark:text-zinc-300"
-        >
+        <Link href="/" className={ui.linkBack}>
           ← Home
         </Link>
       </main>
@@ -307,8 +305,8 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
 
   if (!roomState) {
     return (
-      <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
-        <h1 className="text-xl font-semibold tracking-tight">Game</h1>
+      <main className={`${ui.page} ${ui.pageNarrow} gap-6`}>
+        <h1 className={ui.h1}>Game</h1>
         <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
           Session: {sessionCode}
         </p>
@@ -367,6 +365,9 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
             </p>
           </StatusBanner>
         ) : null}
+        <Link href="/" className={ui.linkBack}>
+          ← Home
+        </Link>
       </main>
     );
   }
@@ -454,19 +455,23 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     !wsReady && hasReceivedLiveState && roomState !== null;
 
   return (
-    <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
-      <header className="space-y-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          {role === "host" ? "Host" : "Player"}
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {phaseTitle(phase)}
-        </h1>
+    <main className={`${ui.page} ${ui.pageGame} ${ui.stack}`}>
+      <header className={`${ui.surfaceHeader} space-y-2`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              {role === "host" ? "Host" : "Player"} view
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              {phaseTitle(phase)}
+            </h1>
+          </div>
+          <span className="shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+            {phase}
+          </span>
+        </div>
         <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
           Session: {sessionCode}
-        </p>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Phase: <span className="font-mono">{phase}</span>
         </p>
         {!wsReady && !hasReceivedLiveState ? (
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -524,16 +529,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {hostCanEndGame ? (
-        <div className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900/50">
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+        <div
+          className={`${ui.surfacePanel} flex flex-col gap-3 border-amber-200/80 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20`}
+        >
+          <p className="text-sm text-zinc-700 dark:text-zinc-300">
             End the session for everyone (unfinished clues stay unanswered).
           </p>
           <button
             type="button"
             onClick={handleEndGame}
-            className="self-start rounded-md border border-zinc-400 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 dark:border-zinc-500 dark:bg-zinc-800 dark:text-zinc-100"
+            className={`${ui.btnDanger} self-start`}
           >
-            End game
+            End game for all
           </button>
         </div>
       ) : null}
@@ -541,7 +548,10 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       {isLobby ? (
         <>
           {role === "host" ? (
-            <section className="space-y-3" aria-labelledby="host-lobby-heading">
+            <section
+              className={`${ui.surfacePanel} space-y-4`}
+              aria-labelledby="host-lobby-heading"
+            >
               <h2
                 id="host-lobby-heading"
                 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
@@ -563,14 +573,14 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 type="button"
                 disabled={!canHostStart}
                 onClick={handleStartGame}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+                className={ui.btnPrimary}
               >
                 Start game
               </button>
             </section>
           ) : (
             <section
-              className="space-y-2"
+              className={`${ui.surfacePanel} space-y-2`}
               aria-labelledby="player-wait-heading"
             >
               <h2
@@ -597,7 +607,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 No players yet.
               </p>
             ) : (
-              <ul className="divide-y divide-zinc-200 rounded-md border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
+              <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 shadow-sm dark:divide-zinc-700 dark:border-zinc-700">
                 {sortedLobbyPlayers.map((p) => (
                   <li
                     key={p.id}
@@ -704,10 +714,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         <EndGameLeaderboard rankings={rankPlayers(roomState.players)} />
       ) : null}
 
-      <Link
-        href="/"
-        className="text-sm font-medium text-zinc-700 underline dark:text-zinc-300"
-      >
+      <Link href="/" className={ui.linkBack}>
         ← Home
       </Link>
     </main>
