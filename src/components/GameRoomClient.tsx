@@ -734,8 +734,8 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {isBoardPhase ? (
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-          <div className="min-w-0 flex-1 space-y-4">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          <div className="min-w-0 flex-1 space-y-6">
             {isCluePhase && openClue ? (
               <ClueView
                 phase={phase === "judging" ? "judging" : "clue_open"}
@@ -802,11 +802,9 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               </StatusBanner>
             )}
           </div>
-          {phase === "board" ? (
-            <aside className="w-full shrink-0 lg:w-64">
-              <GameScoreboard players={roomState.players} showConnection />
-            </aside>
-          ) : null}
+          <aside className="w-full shrink-0 lg:w-72 lg:shrink-0">
+            <GameScoreboard players={roomState.players} showConnection />
+          </aside>
         </div>
       ) : null}
 
