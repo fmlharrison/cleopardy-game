@@ -483,9 +483,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
             {phase}
           </span>
         </div>
-        <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-          Session: {sessionCode}
-        </p>
+        {!isLobby ? (
+          <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
+            Session: {sessionCode}
+          </p>
+        ) : null}
         {!wsReady && !hasReceivedLiveState ? (
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Connecting…
@@ -559,22 +561,142 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {isLobby ? (
-        <>
+        <div className="flex flex-col gap-6">
+          <section
+            aria-labelledby="lobby-waiting-heading"
+            className={`${ui.surfacePanel} border-zinc-300/90 bg-gradient-to-b from-zinc-50 to-white p-5 dark:border-zinc-600 dark:from-zinc-900/50 dark:to-zinc-950/40 sm:p-6`}
+          >
+            <p className={ui.eyebrow}>Waiting room</p>
+            <h2
+              id="lobby-waiting-heading"
+              className="mt-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+            >
+              {role === "host" ? "You’re hosting" : "You’re in the lobby"}
+            </h2>
+            <p className={`${ui.helper} mt-1`}>
+              {role === "host"
+                ? "Share the code so up to six contestants can join from the Join page."
+                : "The host will open the board when everyone who’s playing has joined."}
+            </p>
+
+            <div className="mt-5 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Session code
+              </p>
+              <p
+                className="select-all font-mono text-3xl font-bold tracking-[0.2em] text-zinc-900 sm:text-4xl dark:text-zinc-50"
+                aria-label={`Session code ${sessionCode.split("").join(" ")}`}
+              >
+                {sessionCode}
+              </p>
+            </div>
+
+            {roomState.board?.title ? (
+              <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  Board:
+                </span>{" "}
+                {roomState.board.title}
+              </p>
+            ) : null}
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-zinc-300 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200">
+                {role === "host" ? "Host" : "Contestant"}
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {role === "host"
+                  ? "You control clues and scoring."
+                  : "You’ll buzz in when clues open."}
+              </span>
+            </div>
+          </section>
+
+          <section
+            aria-labelledby="roster-heading"
+            className={`${ui.surfacePanel} space-y-3`}
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="roster-heading" className={ui.sectionTitle}>
+                Contestants
+              </h2>
+              <span className="font-mono text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                {sortedLobbyPlayers.length} / 6
+              </span>
+            </div>
+            <p className={ui.helper}>
+              Join order is shown; up to six players can be in this game.
+            </p>
+            {sortedLobbyPlayers.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-600 dark:border-zinc-600 dark:bg-zinc-900/30 dark:text-zinc-400">
+                No contestants yet. Share the session code so people can join.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {sortedLobbyPlayers.map((p, rosterIndex) => {
+                  const isSelf =
+                    role === "player" &&
+                    playerIdStored !== null &&
+                    p.id === playerIdStored;
+                  return (
+                    <li
+                      key={p.id}
+                      className="flex min-h-[3rem] items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900/40 sm:px-4"
+                    >
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-200/90 font-mono text-xs font-bold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                        aria-hidden
+                      >
+                        {rosterIndex + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">
+                            {p.name}
+                          </span>
+                          {isSelf ? (
+                            <span className="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-900 dark:bg-blue-950/80 dark:text-blue-200">
+                              You
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <span
+                        className={
+                          p.connected
+                            ? "shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            : "shrink-0 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
+                        }
+                      >
+                        {p.connected ? "Here" : "Away"}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
           {role === "host" ? (
             <section
-              className={`${ui.surfacePanel} space-y-4`}
+              className={`${ui.surfacePanel} space-y-4 border-zinc-900/10 bg-zinc-900/[0.03] dark:border-zinc-100/10 dark:bg-zinc-100/[0.04]`}
               aria-labelledby="host-lobby-heading"
             >
-              <h2
-                id="host-lobby-heading"
-                className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Before you start
+              <h2 id="host-lobby-heading" className={ui.sectionTitle}>
+                Start the game
               </h2>
               <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                <span className="font-medium">Board:</span>{" "}
-                {roomState.board?.title ?? "—"}
+                When your group is ready, open the board for everyone. You can
+                start with any number of contestants (up to six).
               </p>
+              {roomState.board?.title ? (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    Board in play:
+                  </span>{" "}
+                  {roomState.board.title}
+                </p>
+              ) : null}
               {hostIdStored !== roomState.hostId ? (
                 <p className="text-xs text-amber-800 dark:text-amber-200">
                   This browser does not match the stored host id. “Start game”
@@ -586,64 +708,29 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 type="button"
                 disabled={!canHostStart}
                 onClick={handleStartGame}
-                className={ui.btnPrimary}
+                className={`${ui.btnPrimary} w-full max-w-md py-3 text-base`}
               >
                 Start game
               </button>
             </section>
           ) : (
             <section
-              className={`${ui.surfacePanel} space-y-2`}
+              className={`${ui.surfacePanel} space-y-3 border-blue-200/60 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/25`}
               aria-labelledby="player-wait-heading"
             >
               <h2
                 id="player-wait-heading"
-                className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
+                className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
               >
-                Waiting
+                Waiting for the host
               </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                The host will start the game when everyone is ready.
+              <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                Stay on this page. When the host starts, the game board will
+                appear here.
               </p>
             </section>
           )}
-
-          <section aria-labelledby="roster-heading" className="space-y-2">
-            <h2
-              id="roster-heading"
-              className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
-            >
-              Players ({sortedLobbyPlayers.length} / 6)
-            </h2>
-            {sortedLobbyPlayers.length === 0 ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                No players yet.
-              </p>
-            ) : (
-              <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 shadow-sm dark:divide-zinc-700 dark:border-zinc-700">
-                {sortedLobbyPlayers.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-                  >
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {p.name}
-                    </span>
-                    <span
-                      className={
-                        p.connected
-                          ? "text-xs text-emerald-700 dark:text-emerald-400"
-                          : "text-xs text-zinc-500 dark:text-zinc-400"
-                      }
-                    >
-                      {p.connected ? "Connected" : "Away"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
+        </div>
       ) : null}
 
       {isBoardPhase ? (
