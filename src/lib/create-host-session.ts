@@ -15,6 +15,8 @@ export type CreateHostSessionResult =
  * Opens a PartyKit room WebSocket, sends HOST_CREATE_SESSION, and resolves when
  * the server broadcasts a SESSION_STATE that matches this host and board.
  */
+const HOST_CREATE_TIMEOUT_MS = 30_000;
+
 export function createHostSession(options: {
   sessionCode: string;
   hostId: string;
@@ -27,12 +29,18 @@ export function createHostSession(options: {
   return new Promise((resolve) => {
     let settled = false;
     const ws = new WebSocket(url);
+    const timeout = {
+      id: undefined as ReturnType<typeof setTimeout> | undefined,
+    };
 
     const finish = (result: CreateHostSessionResult) => {
       if (settled) {
         return;
       }
       settled = true;
+      if (timeout.id !== undefined) {
+        clearTimeout(timeout.id);
+      }
       signal?.removeEventListener("abort", onAbort);
       try {
         ws.close();
@@ -41,6 +49,14 @@ export function createHostSession(options: {
       }
       resolve(result);
     };
+
+    timeout.id = setTimeout(() => {
+      finish({
+        ok: false,
+        message:
+          "Timed out waiting for PartyKit to confirm the session. Check that `npm run party:dev` (or `npm run dev:all`) is running and try again.",
+      });
+    }, HOST_CREATE_TIMEOUT_MS);
 
     const onAbort = () => {
       finish({ ok: false, message: "Cancelled" });

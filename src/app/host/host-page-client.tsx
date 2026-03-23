@@ -8,6 +8,7 @@ import { BoardPreviewSection } from "@/components/BoardPreviewSection";
 import { BoardValidationSection } from "@/components/BoardValidationSection";
 import { CreateGamePlaceholderButton } from "@/components/CreateGamePlaceholderButton";
 import { JsonImportForm } from "@/components/JsonImportForm";
+import { StatusBanner } from "@/components/ui/StatusBanner";
 import { createHostSession } from "@/lib/create-host-session";
 import { getOrCreateStoredId, STORAGE_KEYS } from "@/lib/ids";
 import { generateSessionCode } from "@/lib/session-code";
@@ -139,11 +140,25 @@ export function HostPageClient() {
 
       <BoardPreviewSection board={validatedBoard} />
 
+      {createPending ? (
+        <StatusBanner variant="info" title="Creating session">
+          <p>
+            Contacting PartyKit and registering your board. This usually takes a
+            moment.
+          </p>
+        </StatusBanner>
+      ) : null}
+
+      {createError ? (
+        <StatusBanner variant="error" title="Could not create game">
+          <p>{createError}</p>
+        </StatusBanner>
+      ) : null}
+
       <CreateGamePlaceholderButton
         disabled={validatedBoard === null}
         onCreateGame={handleCreateGame}
         isLoading={createPending}
-        error={createError}
       />
 
       <Link

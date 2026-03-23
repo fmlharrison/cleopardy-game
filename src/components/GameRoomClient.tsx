@@ -7,6 +7,7 @@ import { ClueView } from "@/components/ClueView";
 import { EndGameLeaderboard } from "@/components/game/EndGameLeaderboard";
 import { GameBoardGrid } from "@/components/game/GameBoardGrid";
 import { GameScoreboard } from "@/components/game/GameScoreboard";
+import { StatusBanner } from "@/components/ui/StatusBanner";
 import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
 import type { RoomState } from "@/types/game";
 import type { ClientMessage } from "@/types/messages";
@@ -65,8 +66,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   const [wsReady, setWsReady] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [hasReceivedLiveState, setHasReceivedLiveState] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const roomStateRef = useRef<RoomState | null>(null);
+  /** Mirrors `hasReceivedLiveState` for `onclose` (avoids stale closures). */
+  const receivedLiveStateRef = useRef(false);
 
   useEffect(() => {
     roomStateRef.current = roomState;
@@ -110,9 +114,10 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         return;
       }
       if (parsed.type === "SESSION_STATE") {
+        receivedLiveStateRef.current = true;
+        setHasReceivedLiveState(true);
         setRoomState(parsed.state);
         setConnectError(null);
-        setActionError(null);
       }
       if (parsed.type === "ERROR") {
         setActionError(parsed.message);
@@ -130,6 +135,15 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       if (wsRef.current === ws) {
         wsRef.current = null;
       }
+      setConnectError((prev) => {
+        if (receivedLiveStateRef.current) {
+          return prev;
+        }
+        return (
+          prev ??
+          "The connection closed before the room state loaded. Check that PartyKit is running (`npm run dev:all` or `npm run party:dev`) and refresh this page."
+        );
+      });
     };
 
     return () => {
@@ -253,9 +267,13 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   if (connectError && !roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
-        <p className="text-sm text-red-700 dark:text-red-300" role="alert">
-          {connectError}
+        <h1 className="text-xl font-semibold tracking-tight">Game</h1>
+        <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
+          Session: {sessionCode}
         </p>
+        <StatusBanner variant="error" title="Could not connect">
+          <p>{connectError}</p>
+        </StatusBanner>
         <Link
           href="/"
           className="text-sm font-medium text-zinc-700 underline dark:text-zinc-300"
@@ -269,7 +287,16 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   if (!roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Connecting…</p>
+        <h1 className="text-xl font-semibold tracking-tight">Game</h1>
+        <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
+          Session: {sessionCode}
+        </p>
+        <StatusBanner variant="info" title="Connecting to live session">
+          <p>
+            Loading room state from PartyKit. If this hangs, confirm the dev
+            server is running.
+          </p>
+        </StatusBanner>
       </main>
     );
   }
@@ -345,6 +372,17 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     isAuthoritativeHost &&
     (phase === "board" || phase === "clue_open" || phase === "judging");
 
+  const noHostGameYet =
+    role === "host" && roomState.hostId === null && roomState.board === null;
+
+  const playerNotOnRoster =
+    role === "player" &&
+    playerIdStored !== null &&
+    !roomState.players.some((p) => p.id === playerIdStored);
+
+  const showDisconnectedBanner =
+    !wsReady && hasReceivedLiveState && roomState !== null;
+
   return (
     <main className="mx-auto flex min-h-full max-w-4xl flex-col gap-8 px-6 py-16">
       <header className="space-y-1">
@@ -360,17 +398,59 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           Phase: <span className="font-mono">{phase}</span>
         </p>
-        {!wsReady ? (
-          <p className="text-xs text-amber-700 dark:text-amber-300">
-            Reconnecting…
+        {!wsReady && !hasReceivedLiveState ? (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Connecting…
           </p>
         ) : null}
       </header>
 
+      {showDisconnectedBanner ? (
+        <StatusBanner variant="warning" title="Disconnected from realtime">
+          <p>
+            The WebSocket to PartyKit closed. Refresh the page to reconnect.
+            What you see below is the last state synced to this browser.
+          </p>
+        </StatusBanner>
+      ) : null}
+
+      {noHostGameYet ? (
+        <StatusBanner variant="warning" title="No game at this session code">
+          <p>
+            This room has not been created yet. Open{" "}
+            <Link
+              href="/host"
+              className="font-medium underline underline-offset-2"
+            >
+              Host
+            </Link>{" "}
+            to create a session, or confirm the session code matches the host’s
+            link.
+          </p>
+        </StatusBanner>
+      ) : null}
+
+      {playerNotOnRoster ? (
+        <StatusBanner variant="warning" title="Not on the player roster">
+          <p>
+            This browser is not registered for this game. Use{" "}
+            <Link
+              href="/join"
+              className="font-medium underline underline-offset-2"
+            >
+              Join
+            </Link>{" "}
+            with session code{" "}
+            <span className="font-mono font-medium">{sessionCode}</span> first,
+            or use the same device you joined from.
+          </p>
+        </StatusBanner>
+      ) : null}
+
       {actionError ? (
-        <p className="text-sm text-red-700 dark:text-red-300" role="alert">
-          {actionError}
-        </p>
+        <StatusBanner variant="error" title="Action rejected">
+          <p>{actionError}</p>
+        </StatusBanner>
       ) : null}
 
       {hostCanEndGame ? (
@@ -506,12 +586,13 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               />
             ) : null}
             {isCluePhase && !openClue ? (
-              <p
-                className="text-sm text-red-700 dark:text-red-300"
-                role="alert"
-              >
-                A clue should be active but clue data is missing.
-              </p>
+              <StatusBanner variant="error" title="Clue data missing">
+                <p>
+                  {roomState.currentClueId
+                    ? "The active clue id does not match any clue on the board. The session may be out of sync — try refreshing."
+                    : "The game is in a clue phase but no clue is selected."}
+                </p>
+              </StatusBanner>
             ) : null}
             {roomState.board ? (
               <GameBoardGrid
@@ -525,9 +606,19 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 caption={boardCaption}
               />
             ) : (
-              <p className="text-sm text-red-700 dark:text-red-300">
-                Board data is missing from session state.
-              </p>
+              <StatusBanner variant="error" title="No board in session">
+                <p>
+                  The server state has no board loaded. If you are the host,
+                  this session may need to be recreated from{" "}
+                  <Link
+                    href="/host"
+                    className="font-medium underline underline-offset-2"
+                  >
+                    Host
+                  </Link>
+                  .
+                </p>
+              </StatusBanner>
             )}
           </div>
           {phase === "board" ? (

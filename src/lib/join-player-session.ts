@@ -25,6 +25,8 @@ function messageRaw(
 /**
  * Connects to the room, sends JOIN_SESSION, resolves when SESSION_STATE includes this player.
  */
+const JOIN_TIMEOUT_MS = 30_000;
+
 export function joinPlayerSession(options: {
   sessionCode: string;
   playerId: string;
@@ -37,12 +39,18 @@ export function joinPlayerSession(options: {
   return new Promise((resolve) => {
     let settled = false;
     const ws = new WebSocket(url);
+    const timeout = {
+      id: undefined as ReturnType<typeof setTimeout> | undefined,
+    };
 
     const finish = (result: JoinPlayerSessionResult) => {
       if (settled) {
         return;
       }
       settled = true;
+      if (timeout.id !== undefined) {
+        clearTimeout(timeout.id);
+      }
       signal?.removeEventListener("abort", onAbort);
       try {
         ws.close();
@@ -51,6 +59,14 @@ export function joinPlayerSession(options: {
       }
       resolve(result);
     };
+
+    timeout.id = setTimeout(() => {
+      finish({
+        ok: false,
+        message:
+          "Timed out waiting to join. Check the session code, ask the host to create the game first, and ensure PartyKit is running (`npm run party:dev` or `npm run dev:all`).",
+      });
+    }, JOIN_TIMEOUT_MS);
 
     const onAbort = () => {
       finish({ ok: false, message: "Cancelled" });

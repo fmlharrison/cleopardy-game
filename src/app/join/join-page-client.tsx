@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { StatusBanner } from "@/components/ui/StatusBanner";
+import { joinErrorTitle } from "@/lib/join-error-title";
 import { getOrCreateStoredId, STORAGE_KEYS } from "@/lib/ids";
 import { joinPlayerSession } from "@/lib/join-player-session";
 import { isValidSessionCode, normalizeSessionCode } from "@/lib/session-code";
@@ -127,9 +129,9 @@ export function JoinPageClient() {
         </div>
 
         {error ? (
-          <p className="text-sm text-red-700 dark:text-red-300" role="alert">
-            {error}
-          </p>
+          <StatusBanner variant="error" title={joinErrorTitle(error)}>
+            <p>{error}</p>
+          </StatusBanner>
         ) : null}
 
         <button
@@ -137,7 +139,7 @@ export function JoinPageClient() {
           disabled={pending}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
         >
-          {pending ? "Joining…" : "Join game"}
+          {pending ? "Connecting to session…" : "Join game"}
         </button>
       </form>
 

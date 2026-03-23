@@ -2,14 +2,12 @@ type CreateGamePlaceholderButtonProps = {
   disabled: boolean;
   onCreateGame?: () => void;
   isLoading?: boolean;
-  error?: string | null;
 };
 
 export function CreateGamePlaceholderButton({
   disabled,
   onCreateGame,
   isLoading = false,
-  error = null,
 }: CreateGamePlaceholderButtonProps) {
   const busy = Boolean(isLoading);
   const isDisabled = disabled || busy;
@@ -31,17 +29,16 @@ export function CreateGamePlaceholderButton({
         {busy ? "Creating…" : "Create game"}
       </button>
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Starts a PartyKit room with your validated board. Run{" "}
+        Starts a PartyKit room with your validated board. Use{" "}
+        <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
+          npm run dev:all
+        </code>{" "}
+        or run{" "}
         <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
           npm run party:dev
         </code>{" "}
-        locally so the WebSocket can connect.
+        so the WebSocket can connect.
       </p>
-      {error ? (
-        <p className="text-sm text-red-700 dark:text-red-300" role="alert">
-          {error}
-        </p>
-      ) : null}
     </section>
   );
 }

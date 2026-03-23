@@ -42,13 +42,13 @@
       "name": "Geography",
       "clues": [
         {
-          "id": "clue-s-200",
+          "id": "clue-g-200",
           "value": 200,
           "question": "This country is where the Eiffel Tower is located.",
           "answer": "What is France?"
         },
         {
-          "id": "clue-s-400",
+          "id": "clue-g-400",
           "value": 400,
           "question": "This city is where the Statue of Liberty is located.",
           "answer": "What is New York?"
