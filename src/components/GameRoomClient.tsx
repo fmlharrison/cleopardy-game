@@ -599,6 +599,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 board={roomState.board}
                 answeredClueIds={roomState.answeredClueIds}
                 currentClueId={roomState.currentClueId}
+                phase={phase}
                 hostCanSelectClues={hostCanSelectClues}
                 onHostSelectClue={
                   hostCanSelectClues ? handleHostOpenClue : undefined

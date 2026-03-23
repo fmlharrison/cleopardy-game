@@ -75,6 +75,8 @@ export function ClueView({
   const winnerName = playerName(players, buzzWinnerPlayerId);
   const isSelfWinner =
     Boolean(buzzWinnerPlayerId) && buzzWinnerPlayerId === selfPlayerId;
+  const buzzStateLabel =
+    phase === "judging" ? "Judging" : buzzOpen ? "Buzz open" : "Buzz closed";
 
   const playerStatusMessage = (() => {
     if (phase === "judging") {
@@ -145,11 +147,16 @@ export function ClueView({
           ) : null}
 
           {clue ? (
-            <div className="space-y-3">
-              <p className="text-2xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
-                ${clue.value}
-              </p>
-              <p className="text-base leading-relaxed text-zinc-900 dark:text-zinc-100">
+            <div className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950/50">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-3xl font-extrabold tabular-nums text-amber-700 dark:text-amber-400">
+                  ${clue.value}
+                </p>
+                <span className="rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                  {buzzStateLabel}
+                </span>
+              </div>
+              <p className="text-lg leading-relaxed text-zinc-900 dark:text-zinc-100">
                 {clue.question}
               </p>
               {viewRole === "host" ? (
@@ -192,6 +199,22 @@ export function ClueView({
           </div>
 
           {viewRole === "player" ? (
+            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800/60 dark:bg-blue-950/30">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                {phase === "judging"
+                  ? "Judging in progress — wait for the host's decision."
+                  : winnerName
+                    ? isSelfWinner
+                      ? "You buzzed first. Wait for host judgment."
+                      : `${winnerName} has control of this clue.`
+                    : buzzOpen
+                      ? "Buzz is open — ring in when ready."
+                      : "Buzzing is currently closed."}
+              </p>
+            </div>
+          ) : null}
+
+          {viewRole === "player" ? (
             <div className="space-y-2">
               <button
                 type="button"
@@ -218,8 +241,8 @@ export function ClueView({
           ) : null}
 
           {viewRole === "host" ? (
-            <div className="space-y-2 rounded-md border border-dashed border-zinc-300 bg-white/60 p-3 dark:border-zinc-600 dark:bg-zinc-950/40">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <div className="space-y-2 rounded-md border border-dashed border-zinc-300 bg-zinc-100/70 p-3 dark:border-zinc-600 dark:bg-zinc-900/50">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
                 Host controls
               </p>
               <div className="flex flex-wrap gap-2">

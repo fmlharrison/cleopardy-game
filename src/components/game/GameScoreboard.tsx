@@ -18,15 +18,25 @@ export function GameScoreboard({
   emphasizePlayerId = null,
 }: GameScoreboardProps) {
   const sorted = sortPlayersByStandings(players);
+  const awayCount = showConnection
+    ? sorted.filter((p) => !p.connected).length
+    : 0;
 
   return (
     <section aria-labelledby="scoreboard-heading" className="space-y-2">
-      <h2
-        id="scoreboard-heading"
-        className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
-      >
-        Scores
-      </h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2
+          id="scoreboard-heading"
+          className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
+        >
+          Scores
+        </h2>
+        {showConnection ? (
+          <span className="rounded-full border border-zinc-300 bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+            {awayCount === 0 ? "All connected" : `${awayCount} away`}
+          </span>
+        ) : null}
+      </div>
       {sorted.length === 0 ? (
         <p className="text-sm text-zinc-500 dark:text-zinc-400">No players.</p>
       ) : (
@@ -56,8 +66,8 @@ export function GameScoreboard({
                   </span>
                 ) : null}
               </div>
-              <span className="shrink-0 tabular-nums font-mono font-semibold text-zinc-800 dark:text-zinc-200">
-                {p.score}
+              <span className="shrink-0 rounded bg-zinc-100 px-2 py-0.5 tabular-nums font-mono font-semibold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
+                {`$${p.score}`}
               </span>
             </li>
           ))}
