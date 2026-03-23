@@ -77,11 +77,17 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   }, [roomState]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const url = getPartySocketUrl(sessionCode);
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      if (cancelled) {
+        return;
+      }
+      setConnectError(null);
       setWsReady(true);
       if (role === "player") {
         const playerId = readStoredId(STORAGE_KEYS.playerId);
@@ -105,6 +111,9 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     };
 
     ws.onmessage = (ev: MessageEvent<string | ArrayBuffer | Blob>) => {
+      if (cancelled) {
+        return;
+      }
       const raw = messageRaw(ev.data);
       if (!raw) {
         return;
@@ -125,12 +134,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     };
 
     ws.onerror = () => {
+      if (cancelled) {
+        return;
+      }
       setConnectError(
         `Could not connect to PartyKit. Check the dev server and URL. Tried: ${url}`,
       );
     };
 
     ws.onclose = () => {
+      if (cancelled) {
+        return;
+      }
       setWsReady(false);
       if (wsRef.current === ws) {
         wsRef.current = null;
@@ -147,6 +162,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     };
 
     return () => {
+      cancelled = true;
       ws.close();
       if (wsRef.current === ws) {
         wsRef.current = null;
@@ -284,6 +300,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
     );
   }
 
+  const hostIdForLoad = readStoredId(STORAGE_KEYS.hostId);
+  const playerIdForLoad = readStoredId(STORAGE_KEYS.playerId);
+  const missingHostIdentity = role === "host" && !hostIdForLoad;
+  const missingPlayerIdentity = role === "player" && !playerIdForLoad;
+
   if (!roomState) {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-6 py-16">
@@ -291,12 +312,61 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
           Session: {sessionCode}
         </p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          View:{" "}
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+            {role === "host" ? "Host" : "Player"}
+          </span>{" "}
+          (
+          <code className="rounded bg-zinc-200 px-1 text-[11px] dark:bg-zinc-800">
+            ?role={role}
+          </code>
+          )
+        </p>
         <StatusBanner variant="info" title="Connecting to live session">
           <p>
-            Loading room state from PartyKit. If this hangs, confirm the dev
-            server is running.
+            Syncing room state from PartyKit. There can be a short gap before
+            the first update—this is normal on refresh or direct navigation.
+            Reconnecting should restore an in-progress game (lobby, board, or
+            clue) automatically.
           </p>
         </StatusBanner>
+        {missingHostIdentity ? (
+          <StatusBanner
+            variant="warning"
+            title="No host identity in this browser"
+          >
+            <p>
+              Host controls need the id from the device that created this
+              session. Open{" "}
+              <Link
+                href="/host"
+                className="font-medium underline underline-offset-2"
+              >
+                Host
+              </Link>{" "}
+              here first, or use the original host link.
+            </p>
+          </StatusBanner>
+        ) : null}
+        {missingPlayerIdentity ? (
+          <StatusBanner
+            variant="warning"
+            title="No player identity in this browser"
+          >
+            <p>
+              Use{" "}
+              <Link
+                href="/join"
+                className="font-medium underline underline-offset-2"
+              >
+                Join
+              </Link>{" "}
+              with this session code on this device, or the same Join link you
+              used before, so your player id is saved.
+            </p>
+          </StatusBanner>
+        ) : null}
       </main>
     );
   }
