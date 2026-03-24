@@ -7,6 +7,10 @@ export const ui = {
   pageNarrow: "max-w-lg",
   pageHost: "max-w-3xl",
   pageGame: "max-w-4xl",
+  /** In-game shell: board + sidebar rail */
+  pageGameWide: "max-w-7xl",
+  /** Full-width finale (end game) */
+  pageGameFinale: "max-w-3xl",
   stack: "flex flex-col gap-8",
   stackLoose: "flex flex-col gap-10",
   h1: "text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50",

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { GameScoreboard } from "@/components/game/GameScoreboard";
 import { ui } from "@/lib/ui";
 import type { Player } from "@/types/game";
@@ -28,6 +30,11 @@ export type ClueViewProps = {
   onHostMarkIncorrect?: () => void;
   onHostReopenBuzz?: () => void;
   onHostCloseClue?: () => void;
+  /**
+   * When false, omit the right-rail scoreboard (e.g. game shell has a Leaderboard tab).
+   * @default true
+   */
+  showInlineScoreboard?: boolean;
 };
 
 function playerName(players: Player[], id: string | null): string | null {
@@ -58,6 +65,17 @@ function buzzSummaryLine(
   return "Buzzing is closed.";
 }
 
+function isEditableTarget(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = el.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+    return true;
+  }
+  return el.isContentEditable;
+}
+
 export function ClueView({
   phase,
   viewRole,
@@ -72,10 +90,29 @@ export function ClueView({
   onHostMarkIncorrect,
   onHostReopenBuzz,
   onHostCloseClue,
+  showInlineScoreboard = true,
 }: ClueViewProps) {
   const winnerName = playerName(players, buzzWinnerPlayerId);
   const isSelfWinner =
     Boolean(buzzWinnerPlayerId) && buzzWinnerPlayerId === selfPlayerId;
+
+  useEffect(() => {
+    if (viewRole !== "player" || !buzzEligible || !onBuzz) {
+      return;
+    }
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key !== "Enter") {
+        return;
+      }
+      if (isEditableTarget(ev.target)) {
+        return;
+      }
+      ev.preventDefault();
+      onBuzz();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [viewRole, buzzEligible, onBuzz]);
 
   const buzzStateLabel =
     phase === "judging" ? "Judging" : buzzOpen ? "Buzz open" : "Buzz closed";
@@ -128,20 +165,25 @@ export function ClueView({
           ? "border-t-2 border-emerald-500/45 bg-emerald-950/30 dark:border-emerald-500/50 dark:bg-emerald-950/35"
           : "border-t-2 border-zinc-600/50 bg-zinc-900/50 dark:border-zinc-600 dark:bg-zinc-950/60";
 
+  const mainRowClass = showInlineScoreboard
+    ? "flex flex-col gap-0 lg:flex-row lg:items-stretch"
+    : "flex flex-col gap-0";
+
   return (
     <section
       aria-labelledby="clue-view-heading"
       className="overflow-hidden rounded-2xl border-2 border-zinc-300 shadow-lg dark:border-zinc-600"
     >
-      <div className="flex flex-col gap-0 lg:flex-row lg:items-stretch">
+      <div className={mainRowClass}>
         <div className="min-w-0 flex-1">
           {/* Clue hero — main event */}
           {clue ? (
-            <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-5 pb-8 pt-6 text-white sm:px-8 sm:pb-10 sm:pt-8">
+            <div className="jeopardy-clue-hero px-5 pb-8 pt-6 text-white sm:px-8 sm:pb-10 sm:pt-8">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p
                   id="clue-view-heading"
-                  className="text-[11px] font-bold uppercase tracking-[0.25em] text-amber-400/90"
+                  className="text-[11px] font-bold uppercase tracking-[0.25em]"
+                  style={{ color: "var(--jeopardy-clue-accent)" }}
                 >
                   Live clue
                 </p>
@@ -152,7 +194,8 @@ export function ClueView({
 
               <div className="mt-6 flex flex-wrap items-end gap-4 gap-y-2">
                 <p
-                  className="text-5xl font-black tabular-nums tracking-tight text-amber-400 sm:text-6xl"
+                  className="text-5xl font-black tabular-nums tracking-tight sm:text-6xl"
+                  style={{ color: "var(--jeopardy-clue-accent)" }}
                   aria-label={`Clue value ${clue.value} dollars`}
                 >
                   ${clue.value}
@@ -234,7 +277,7 @@ export function ClueView({
                         ? "Buzz is closed for this clue."
                         : "You can’t buzz right now."
                   : onBuzz
-                    ? "Tap when you’re ready to answer out loud."
+                    ? "Tap or press Enter when you’re ready to answer out loud."
                     : "Buzz will be wired to the server next."}
               </p>
             </div>
@@ -293,13 +336,15 @@ export function ClueView({
           ) : null}
         </div>
 
-        <aside className="w-full shrink-0 border-t border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-950/50 lg:w-72 lg:border-l lg:border-t-0 lg:p-5">
-          <GameScoreboard
-            players={players}
-            showConnection
-            emphasizePlayerId={buzzWinnerPlayerId}
-          />
-        </aside>
+        {showInlineScoreboard ? (
+          <aside className="w-full shrink-0 border-t border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-950/50 lg:w-72 lg:border-l lg:border-t-0 lg:p-5">
+            <GameScoreboard
+              players={players}
+              showConnection
+              emphasizePlayerId={buzzWinnerPlayerId}
+            />
+          </aside>
+        ) : null}
       </div>
     </section>
   );

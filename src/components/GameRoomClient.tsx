@@ -6,7 +6,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ClueView } from "@/components/ClueView";
 import { EndGameLeaderboard } from "@/components/game/EndGameLeaderboard";
 import { GameBoardGrid } from "@/components/game/GameBoardGrid";
-import { GameScoreboard } from "@/components/game/GameScoreboard";
+import { GamePlayShell } from "@/components/game/GamePlayShell";
+import type { GamePlayTab } from "@/components/game/GamePlayShell";
+import { LiveLeaderboard } from "@/components/game/LiveLeaderboard";
 import { StatusBanner } from "@/components/ui/StatusBanner";
 import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
 import type { RoomState } from "@/types/game";
@@ -74,6 +76,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   const roomStateRef = useRef<RoomState | null>(null);
   /** Mirrors `hasReceivedLiveState` for `onclose` (avoids stale closures). */
   const receivedLiveStateRef = useRef(false);
+  const [playTab, setPlayTab] = useState<GamePlayTab>("board");
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -85,6 +88,13 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   useEffect(() => {
     roomStateRef.current = roomState;
   }, [roomState]);
+
+  /** When a clue opens, bring players back to the Board tab so they see the clue. */
+  useEffect(() => {
+    if (roomState?.phase === "clue_open" || roomState?.phase === "judging") {
+      setPlayTab("board");
+    }
+  }, [roomState?.phase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -467,8 +477,14 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   const showDisconnectedBanner =
     !wsReady && hasReceivedLiveState && roomState !== null;
 
+  const pageWidthClass = isGameOver
+    ? ui.pageGameFinale
+    : isBoardPhase
+      ? ui.pageGameWide
+      : ui.pageGame;
+
   return (
-    <main className={`${ui.page} ${ui.pageGame} ${ui.stack}`}>
+    <main className={`${ui.page} ${pageWidthClass} ${ui.stack}`}>
       <header className={`${ui.surfaceHeader} space-y-2`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
@@ -479,9 +495,21 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               {phaseTitle(phase)}
             </h1>
           </div>
-          <span className="shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-            {phase}
-          </span>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {hostCanEndGame ? (
+              <button
+                type="button"
+                onClick={handleEndGame}
+                title="Ends the session for everyone. Unplayed clues stay on the board."
+                className={`${ui.btnDanger} whitespace-nowrap`}
+              >
+                End game
+              </button>
+            ) : null}
+            <span className="shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+              {phase}
+            </span>
+          </div>
         </div>
         {!isLobby ? (
           <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
@@ -541,23 +569,6 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         <StatusBanner variant="error" title="Action rejected">
           <p>{actionError}</p>
         </StatusBanner>
-      ) : null}
-
-      {hostCanEndGame ? (
-        <div
-          className={`${ui.surfacePanel} flex flex-col gap-3 border-amber-200/80 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20`}
-        >
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
-            End the session for everyone (unfinished clues stay unanswered).
-          </p>
-          <button
-            type="button"
-            onClick={handleEndGame}
-            className={`${ui.btnDanger} self-start`}
-          >
-            End game for all
-          </button>
-        </div>
       ) : null}
 
       {isLobby ? (
@@ -734,82 +745,90 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {isBoardPhase ? (
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-          <div className="min-w-0 flex-1 space-y-6">
-            {isCluePhase && openClue ? (
-              <ClueView
-                phase={phase === "judging" ? "judging" : "clue_open"}
-                viewRole={role}
-                clue={{
-                  value: openClue.value,
-                  question: openClue.question,
-                  answer: role === "host" ? openClue.answer : "",
-                }}
-                players={roomState.players}
-                buzzOpen={roomState.buzzOpen}
-                buzzWinnerPlayerId={roomState.buzzWinnerPlayerId}
-                selfPlayerId={playerIdStored}
-                buzzEligible={playerBuzzEligible}
-                onBuzz={playerBuzzEligible ? handleBuzz : undefined}
-                onHostMarkCorrect={
-                  hostCanMarkJudgment ? handleHostMarkCorrect : undefined
-                }
-                onHostMarkIncorrect={
-                  hostCanMarkJudgment ? handleHostMarkIncorrect : undefined
-                }
-                onHostReopenBuzz={
-                  hostCanReopenBuzz ? handleHostReopenBuzz : undefined
-                }
-                onHostCloseClue={
-                  hostCanCloseClue ? handleHostCloseClue : undefined
-                }
-              />
-            ) : null}
-            {isCluePhase && !openClue ? (
-              <StatusBanner variant="error" title="Clue data missing">
-                <p>
-                  {roomState.currentClueId
-                    ? "The active clue id does not match any clue on the board. The session may be out of sync — try refreshing."
-                    : "The game is in a clue phase but no clue is selected."}
-                </p>
-              </StatusBanner>
-            ) : null}
-            {roomState.board ? (
-              <GameBoardGrid
-                board={roomState.board}
-                answeredClueIds={roomState.answeredClueIds}
-                currentClueId={roomState.currentClueId}
-                phase={phase}
-                hostCanSelectClues={hostCanSelectClues}
-                onHostSelectClue={
-                  hostCanSelectClues ? handleHostOpenClue : undefined
-                }
-                caption={boardCaption}
-              />
-            ) : (
-              <StatusBanner variant="error" title="No board in session">
-                <p>
-                  The server state has no board loaded. If you are the host,
-                  this session may need to be recreated from{" "}
-                  <Link
-                    href="/host"
-                    className="font-medium underline underline-offset-2"
-                  >
-                    Host
-                  </Link>
-                  .
-                </p>
-              </StatusBanner>
-            )}
-          </div>
-          <aside className="w-full shrink-0 lg:w-72 lg:shrink-0">
-            <GameScoreboard players={roomState.players} showConnection />
-          </aside>
-        </div>
+        <GamePlayShell tab={playTab} onTabChange={setPlayTab}>
+          {playTab === "board" ? (
+            <div className="space-y-6">
+              {isCluePhase && openClue ? (
+                <ClueView
+                  phase={phase === "judging" ? "judging" : "clue_open"}
+                  viewRole={role}
+                  clue={{
+                    value: openClue.value,
+                    question: openClue.question,
+                    answer: role === "host" ? openClue.answer : "",
+                  }}
+                  players={roomState.players}
+                  buzzOpen={roomState.buzzOpen}
+                  buzzWinnerPlayerId={roomState.buzzWinnerPlayerId}
+                  selfPlayerId={playerIdStored}
+                  buzzEligible={playerBuzzEligible}
+                  onBuzz={playerBuzzEligible ? handleBuzz : undefined}
+                  showInlineScoreboard={false}
+                  onHostMarkCorrect={
+                    hostCanMarkJudgment ? handleHostMarkCorrect : undefined
+                  }
+                  onHostMarkIncorrect={
+                    hostCanMarkJudgment ? handleHostMarkIncorrect : undefined
+                  }
+                  onHostReopenBuzz={
+                    hostCanReopenBuzz ? handleHostReopenBuzz : undefined
+                  }
+                  onHostCloseClue={
+                    hostCanCloseClue ? handleHostCloseClue : undefined
+                  }
+                />
+              ) : null}
+              {isCluePhase && !openClue ? (
+                <StatusBanner variant="error" title="Clue data missing">
+                  <p>
+                    {roomState.currentClueId
+                      ? "The active clue id does not match any clue on the board. The session may be out of sync — try refreshing."
+                      : "The game is in a clue phase but no clue is selected."}
+                  </p>
+                </StatusBanner>
+              ) : null}
+              {phase === "board" && roomState.board ? (
+                <GameBoardGrid
+                  board={roomState.board}
+                  answeredClueIds={roomState.answeredClueIds}
+                  currentClueId={roomState.currentClueId}
+                  phase={phase}
+                  hostCanSelectClues={hostCanSelectClues}
+                  onHostSelectClue={
+                    hostCanSelectClues ? handleHostOpenClue : undefined
+                  }
+                  caption={boardCaption}
+                />
+              ) : null}
+              {phase === "board" && !roomState.board ? (
+                <StatusBanner variant="error" title="No board in session">
+                  <p>
+                    The server state has no board loaded. If you are the host,
+                    this session may need to be recreated from{" "}
+                    <Link
+                      href="/host"
+                      className="font-medium underline underline-offset-2"
+                    >
+                      Host
+                    </Link>
+                    .
+                  </p>
+                </StatusBanner>
+              ) : null}
+            </div>
+          ) : (
+            <LiveLeaderboard
+              players={roomState.players}
+              selfPlayerId={role === "player" ? playerIdStored : null}
+            />
+          )}
+        </GamePlayShell>
       ) : null}
 
       {isGameOver ? (
-        <EndGameLeaderboard rankings={rankPlayers(roomState.players)} />
+        <div className="w-full pt-4">
+          <EndGameLeaderboard rankings={rankPlayers(roomState.players)} />
+        </div>
       ) : null}
 
       <Link href="/" className={ui.linkBack}>
