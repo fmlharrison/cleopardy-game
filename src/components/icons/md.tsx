@@ -13,7 +13,6 @@ export {
   MdOutlineLock,
   MdOutlineMic,
   MdOutlinePayments,
-  MdOutlineQueryStats,
   MdOutlineStars,
   MdSensors,
 } from "react-icons/md";

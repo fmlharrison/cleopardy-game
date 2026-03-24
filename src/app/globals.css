@@ -3,11 +3,6 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  /* End-game leaderboard header only (legacy gradient) */
-  --jeopardy-clue-hero-from: #0c1929;
-  --jeopardy-clue-hero-via: #0f172a;
-  --jeopardy-clue-hero-to: #020617;
-  --jeopardy-clue-accent: #fbbf24;
 }
 
 @theme inline {
@@ -44,15 +39,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-}
-
-.jeopardy-clue-hero {
-  background: linear-gradient(
-    180deg,
-    var(--jeopardy-clue-hero-from),
-    var(--jeopardy-clue-hero-via) 45%,
-    var(--jeopardy-clue-hero-to)
-  );
 }
 
 /* One-time reveal for end-game winner (respect reduced motion). */

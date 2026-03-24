@@ -499,7 +499,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
           : `${ui.page} ${pageWidthClass} ${ui.stack}`
       }
     >
-      {!isBoardPhase ? (
+      {/* {!isBoardPhase ? (
         <header className={`${ui.surfaceHeader} space-y-2`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
@@ -537,7 +537,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
             </p>
           ) : null}
         </header>
-      ) : null}
+      ) : null} */}
 
       {showDisconnectedBanner ? (
         <div className={isBoardPhase ? "px-4 pt-3 md:px-6" : ""}>

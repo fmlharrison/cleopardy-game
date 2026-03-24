@@ -11,7 +11,6 @@ import {
   MdOutlineGridView,
   MdOutlineLeaderboard,
   MdOutlinePayments,
-  MdOutlineQueryStats,
   MdOutlineStars,
 } from "@/components/icons/md";
 
@@ -31,12 +30,6 @@ export type GameArchivistShellProps = {
   sidebarFooterBoard: React.ReactNode;
   children: React.ReactNode;
 };
-
-function navTabClass(active: boolean): string {
-  return active
-    ? "border-archivist-ink text-archivist-ink pb-1"
-    : "border-transparent text-archivist-accent hover:text-archivist-ink";
-}
 
 export function GameArchivistShell({
   tab,
@@ -123,40 +116,14 @@ export function GameArchivistShell({
         <div className="min-w-0 text-xl font-bold uppercase tracking-tighter text-archivist-ink md:text-2xl">
           The Archivist: Jeopardy
         </div>
-        <div
-          className="hidden items-center gap-x-8 md:flex"
-          role="tablist"
-          aria-label="Primary views"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "board"}
-            tabIndex={tab === "board" ? 0 : -1}
-            onClick={setBoardTab}
-            className={`border-b-2 font-medium tracking-tight transition-colors duration-300 ${navTabClass(tab === "board")}`}
-          >
-            Game board
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "leaderboard"}
-            tabIndex={tab === "leaderboard" ? 0 : -1}
-            onClick={setLeaderTab}
-            className={`border-b-2 font-medium tracking-tight transition-colors duration-300 ${navTabClass(tab === "leaderboard")}`}
-          >
-            Leaderboard
-          </button>
+        <div className="flex shrink-0 items-center gap-x-3 md:gap-x-6">
           <button
             type="button"
             onClick={() => setRulesOpen(true)}
-            className="border-b-2 border-transparent font-medium tracking-tight text-archivist-accent transition-colors duration-300 hover:text-archivist-ink"
+            className="text-xs font-semibold text-archivist-accent underline-offset-4 hover:text-archivist-ink hover:underline sm:text-sm"
           >
             Rules
           </button>
-        </div>
-        <div className="flex shrink-0 items-center gap-x-3 md:gap-x-6">
           {connecting ? (
             <span className="text-xs text-archivist-accent">Connecting…</span>
           ) : null}
@@ -233,14 +200,6 @@ export function GameArchivistShell({
               <MdOutlineStars className="h-5 w-5 shrink-0" aria-hidden />
               <span>Game board</span>
             </button>
-            <div
-              className="flex cursor-not-allowed items-center gap-4 rounded-sm p-4 text-sm font-medium text-archivist-accent opacity-50"
-              title="Coming soon"
-              aria-disabled
-            >
-              <MdOutlineQueryStats className="h-5 w-5 shrink-0" aria-hidden />
-              <span>Round stats</span>
-            </div>
           </nav>
 
           {sidebarFooter}
