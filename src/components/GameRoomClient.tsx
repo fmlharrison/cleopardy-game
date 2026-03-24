@@ -856,12 +856,10 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               ) : null}
             </div>
           ) : (
-            <div className="mx-auto max-w-2xl rounded-sm border border-archivist-outline-variant/20 bg-archivist-surface-lowest p-5 shadow-sm md:p-6">
-              <LiveLeaderboard
-                players={roomState.players}
-                selfPlayerId={role === "player" ? playerIdStored : null}
-              />
-            </div>
+            <LiveLeaderboard
+              players={roomState.players}
+              selfPlayerId={role === "player" ? playerIdStored : null}
+            />
           )}
         </GameArchivistShell>
       ) : null}
