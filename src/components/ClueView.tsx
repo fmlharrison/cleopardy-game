@@ -1,6 +1,7 @@
 "use client";
 
 import { GameScoreboard } from "@/components/game/GameScoreboard";
+import { ui } from "@/lib/ui";
 import type { Player } from "@/types/game";
 
 /** Active clue copy; `answer` is only rendered when `viewRole === "host"`. */
@@ -75,8 +76,18 @@ export function ClueView({
   const winnerName = playerName(players, buzzWinnerPlayerId);
   const isSelfWinner =
     Boolean(buzzWinnerPlayerId) && buzzWinnerPlayerId === selfPlayerId;
+
   const buzzStateLabel =
     phase === "judging" ? "Judging" : buzzOpen ? "Buzz open" : "Buzz closed";
+
+  const momentHeadline =
+    phase === "judging"
+      ? "Judging this response"
+      : winnerName
+        ? "Buzz locked"
+        : buzzOpen
+          ? "Open for buzz"
+          : "Buzz closed";
 
   const playerStatusMessage = (() => {
     if (phase === "judging") {
@@ -95,7 +106,7 @@ export function ClueView({
 
   const hostBuzzMessage = (() => {
     if (phase === "judging") {
-      return "Judging — use Correct or Incorrect when ready.";
+      return "Use Correct or Incorrect when ready.";
     }
     if (winnerName) {
       return `${winnerName} has the floor.`;
@@ -108,149 +119,143 @@ export function ClueView({
 
   const buzzButtonDisabled = !buzzEligible;
 
+  const momentPanelClass =
+    phase === "judging"
+      ? "border-t-2 border-blue-500/50 bg-blue-950/40 dark:border-blue-400/50 dark:bg-blue-950/50"
+      : winnerName
+        ? "border-t-2 border-amber-500/70 bg-amber-950/35 dark:border-amber-400/60 dark:bg-amber-950/40"
+        : buzzOpen
+          ? "border-t-2 border-emerald-500/45 bg-emerald-950/30 dark:border-emerald-500/50 dark:bg-emerald-950/35"
+          : "border-t-2 border-zinc-600/50 bg-zinc-900/50 dark:border-zinc-600 dark:bg-zinc-950/60";
+
   return (
     <section
       aria-labelledby="clue-view-heading"
-      className="rounded-lg border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-900/40"
+      className="overflow-hidden rounded-2xl border-2 border-zinc-300 shadow-lg dark:border-zinc-600"
     >
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="space-y-1">
-            <h2
-              id="clue-view-heading"
-              className="text-sm font-semibold text-zinc-800 dark:text-zinc-200"
-            >
-              Clue
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Phase:{" "}
-              <span className="font-mono">
-                {phase === "clue_open" ? "clue open" : "judging"}
-              </span>
-            </p>
-          </div>
-
-          {winnerName && buzzWinnerPlayerId ? (
-            <div
-              className="rounded-lg border-2 border-amber-500 bg-amber-100 px-4 py-3 dark:border-amber-400 dark:bg-amber-950/60"
-              role="status"
-              aria-live="polite"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-900 dark:text-amber-200">
-                First buzz
-              </p>
-              <p className="mt-1 text-lg font-bold text-amber-950 dark:text-amber-50">
-                {winnerName}
-                {isSelfWinner && viewRole === "player" ? " (you)" : ""}
-              </p>
-            </div>
-          ) : null}
-
+      <div className="flex flex-col gap-0 lg:flex-row lg:items-stretch">
+        <div className="min-w-0 flex-1">
+          {/* Clue hero — main event */}
           {clue ? (
-            <div className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-950/50">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-3xl font-extrabold tabular-nums text-amber-700 dark:text-amber-400">
-                  ${clue.value}
+            <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-5 pb-8 pt-6 text-white sm:px-8 sm:pb-10 sm:pt-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p
+                  id="clue-view-heading"
+                  className="text-[11px] font-bold uppercase tracking-[0.25em] text-amber-400/90"
+                >
+                  Live clue
                 </p>
-                <span className="rounded-full border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                <span className="rounded-md border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-zinc-200">
                   {buzzStateLabel}
                 </span>
               </div>
-              <p className="text-lg leading-relaxed text-zinc-900 dark:text-zinc-100">
+
+              <div className="mt-6 flex flex-wrap items-end gap-4 gap-y-2">
+                <p
+                  className="text-5xl font-black tabular-nums tracking-tight text-amber-400 sm:text-6xl"
+                  aria-label={`Clue value ${clue.value} dollars`}
+                >
+                  ${clue.value}
+                </p>
+              </div>
+
+              <p className="mt-6 text-pretty text-xl font-medium leading-snug text-zinc-100 sm:text-2xl sm:leading-tight">
                 {clue.question}
               </p>
+
               {viewRole === "host" ? (
-                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-950/40">
-                  <p className="text-xs font-medium uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
-                    Host — accepted answer
+                <div className="mt-8 rounded-xl border border-emerald-500/40 bg-emerald-950/50 px-4 py-3 sm:px-5 sm:py-4">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300/90">
+                    Answer (host only)
                   </p>
-                  <p className="mt-1 text-sm font-medium text-emerald-950 dark:text-emerald-100">
+                  <p className="mt-2 text-lg font-semibold leading-snug text-emerald-50">
                     {clue.answer}
                   </p>
                 </div>
               ) : null}
             </div>
           ) : (
-            <p className="text-sm text-red-700 dark:text-red-300" role="alert">
-              Clue data is missing.
-            </p>
+            <div className="bg-slate-950 px-5 py-8 sm:px-8">
+              <p className="text-sm text-red-300" role="alert">
+                Clue data is missing.
+              </p>
+            </div>
           )}
 
+          {/* Single moment / status strip */}
           <div
-            className="rounded-md border border-zinc-200 bg-white px-3 py-2 dark:border-zinc-600 dark:bg-zinc-950/60"
+            className={`px-5 py-4 sm:px-8 ${momentPanelClass}`}
             role="status"
             aria-live="polite"
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Buzz status
+            <p className="text-xs font-bold uppercase tracking-wide text-zinc-200">
+              {momentHeadline}
             </p>
-            <p className="mt-1 text-sm text-zinc-800 dark:text-zinc-200">
+            {winnerName && buzzWinnerPlayerId ? (
+              <p className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                {winnerName}
+                {isSelfWinner && viewRole === "player" ? (
+                  <span className="ml-2 text-lg font-semibold text-amber-300">
+                    (you)
+                  </span>
+                ) : null}
+              </p>
+            ) : null}
+            <p className="mt-2 text-sm leading-relaxed text-zinc-300">
               {buzzSummaryLine(phase, buzzOpen, buzzWinnerPlayerId, players)}
             </p>
-            {viewRole === "host" ? (
-              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                {hostBuzzMessage}
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                {playerStatusMessage}
-              </p>
-            )}
+            <p className="mt-2 text-sm text-zinc-400">
+              {viewRole === "host" ? hostBuzzMessage : playerStatusMessage}
+            </p>
           </div>
 
+          {/* Player buzz — primary action */}
           {viewRole === "player" ? (
-            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800/60 dark:bg-blue-950/30">
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                {phase === "judging"
-                  ? "Judging in progress — wait for the host's decision."
-                  : winnerName
-                    ? isSelfWinner
-                      ? "You buzzed first. Wait for host judgment."
-                      : `${winnerName} has control of this clue.`
-                    : buzzOpen
-                      ? "Buzz is open — ring in when ready."
-                      : "Buzzing is currently closed."}
-              </p>
-            </div>
-          ) : null}
-
-          {viewRole === "player" ? (
-            <div className="space-y-2">
+            <div className="space-y-3 bg-zinc-100 px-5 py-6 dark:bg-zinc-900/80 sm:px-8">
               <button
                 type="button"
                 disabled={buzzButtonDisabled}
                 onClick={() => onBuzz?.()}
-                className="w-full rounded-xl bg-amber-500 px-4 py-4 text-lg font-bold tracking-wide text-amber-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-amber-600 dark:text-amber-50 dark:hover:bg-amber-500"
+                className={`w-full rounded-2xl border-4 border-transparent px-6 py-5 text-xl font-black uppercase tracking-widest transition-colors sm:text-2xl ${
+                  buzzButtonDisabled
+                    ? "cursor-not-allowed bg-zinc-300 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-600"
+                    : "bg-amber-500 text-amber-950 shadow-xl ring-4 ring-amber-400/50 hover:bg-amber-400 dark:bg-amber-500 dark:text-amber-950 dark:hover:bg-amber-400"
+                }`}
               >
                 Buzz
               </button>
-              <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
                 {buzzButtonDisabled
                   ? phase === "judging"
                     ? "Buzz is off while the host judges."
                     : buzzWinnerPlayerId
                       ? "Someone already buzzed in."
                       : !buzzOpen
-                        ? "Buzz is closed."
+                        ? "Buzz is closed for this clue."
                         : "You can’t buzz right now."
                   : onBuzz
-                    ? "Tap when you’re ready to answer."
+                    ? "Tap when you’re ready to answer out loud."
                     : "Buzz will be wired to the server next."}
               </p>
             </div>
           ) : null}
 
+          {/* Host console — visually separated */}
           {viewRole === "host" ? (
-            <div className="space-y-2 rounded-md border border-dashed border-zinc-300 bg-zinc-100/70 p-3 dark:border-zinc-600 dark:bg-zinc-900/50">
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
-                Host controls
+            <div className="border-t-4 border-amber-500 bg-amber-50/90 px-5 py-5 dark:border-amber-600 dark:bg-amber-950/30 sm:px-8">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-900 dark:text-amber-200">
+                Host console
               </p>
-              <div className="flex flex-wrap gap-2">
+              <p className="mt-1 text-sm text-amber-950/80 dark:text-amber-100/80">
+                Run the clue: mark the response, reopen buzz if needed, or close
+                the clue.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   disabled={!onHostMarkCorrect}
                   onClick={onHostMarkCorrect}
-                  className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-emerald-600"
+                  className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-emerald-600"
                 >
                   Correct
                 </button>
@@ -258,7 +263,7 @@ export function ClueView({
                   type="button"
                   disabled={!onHostMarkIncorrect}
                   onClick={onHostMarkIncorrect}
-                  className="rounded-md bg-red-700 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-red-600"
+                  className="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-red-600"
                 >
                   Incorrect
                 </button>
@@ -266,7 +271,7 @@ export function ClueView({
                   type="button"
                   disabled={!onHostReopenBuzz}
                   onClick={onHostReopenBuzz}
-                  className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-600 dark:bg-zinc-200 dark:text-zinc-900"
+                  className="rounded-lg border-2 border-zinc-400 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-500 dark:bg-zinc-900 dark:text-zinc-100"
                 >
                   Reopen buzz
                 </button>
@@ -274,19 +279,21 @@ export function ClueView({
                   type="button"
                   disabled={!onHostCloseClue}
                   onClick={onHostCloseClue}
-                  className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+                  className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
                 >
                   Close clue
                 </button>
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p
+                className={`${ui.helper} mt-3 text-amber-900/70 dark:text-amber-200/70`}
+              >
                 The server validates each action; errors appear above.
               </p>
             </div>
           ) : null}
         </div>
 
-        <aside className="w-full shrink-0 lg:w-56">
+        <aside className="w-full shrink-0 border-t border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-950/50 lg:w-72 lg:border-l lg:border-t-0 lg:p-5">
           <GameScoreboard
             players={players}
             showConnection
