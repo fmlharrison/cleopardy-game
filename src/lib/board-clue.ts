@@ -17,6 +17,22 @@ export function getClueById(
   return null;
 }
 
+/** Category title for a clue id, if present on the board. */
+export function getCategoryNameForClueId(
+  board: Board | null,
+  clueId: string | null,
+): string | null {
+  if (!board || !clueId) {
+    return null;
+  }
+  for (const category of board.categories) {
+    if (category.clues.some((c) => c.id === clueId)) {
+      return category.name;
+    }
+  }
+  return null;
+}
+
 /** All clue ids on the board (order: categories left-to-right, clues ascending by array order). */
 export function getBoardClueIds(board: Board): string[] {
   const ids: string[] = [];

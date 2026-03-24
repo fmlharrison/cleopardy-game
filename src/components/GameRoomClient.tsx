@@ -5,16 +5,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ClueView } from "@/components/ClueView";
 import { EndGameLeaderboard } from "@/components/game/EndGameLeaderboard";
+import { GameArchivistShell } from "@/components/game/GameArchivistShell";
+import { GameBoardArchivistFooter } from "@/components/game/GameBoardArchivistFooter";
 import { GameBoardGrid } from "@/components/game/GameBoardGrid";
-import { GamePlayShell } from "@/components/game/GamePlayShell";
 import type { GamePlayTab } from "@/components/game/GamePlayShell";
 import { LiveLeaderboard } from "@/components/game/LiveLeaderboard";
+import { StandingPodium } from "@/components/game/StandingPodium";
 import { StatusBanner } from "@/components/ui/StatusBanner";
 import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
 import type { RoomState } from "@/types/game";
 import type { ClientMessage } from "@/types/messages";
 
-import { getClueById } from "@/lib/board-clue";
+import { getCategoryNameForClueId, getClueById } from "@/lib/board-clue";
 import { rankPlayers } from "@/lib/ranking";
 import { ui } from "@/lib/ui";
 import {
@@ -92,7 +94,8 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
   /** When a clue opens, bring players back to the Board tab so they see the clue. */
   useEffect(() => {
     if (roomState?.phase === "clue_open" || roomState?.phase === "judging") {
-      setPlayTab("board");
+      const id = requestAnimationFrame(() => setPlayTab("board"));
+      return () => cancelAnimationFrame(id);
     }
   }, [roomState?.phase]);
 
@@ -429,6 +432,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ? getClueById(roomState.board, roomState.currentClueId)
       : null;
 
+  const categoryName = getCategoryNameForClueId(
+    roomState.board,
+    roomState.currentClueId,
+  );
+
   const playerIdStored = readStoredId(STORAGE_KEYS.playerId);
   const isCluePhase = phase === "clue_open" || phase === "judging";
 
@@ -484,91 +492,107 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       : ui.pageGame;
 
   return (
-    <main className={`${ui.page} ${pageWidthClass} ${ui.stack}`}>
-      <header className={`${ui.surfaceHeader} space-y-2`}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              {role === "host" ? "Host" : "Player"} view
+    <main
+      className={
+        isBoardPhase
+          ? "font-archivist flex min-h-screen w-full max-w-none flex-col bg-archivist-cream text-archivist-ink"
+          : `${ui.page} ${pageWidthClass} ${ui.stack}`
+      }
+    >
+      {!isBoardPhase ? (
+        <header className={`${ui.surfaceHeader} space-y-2`}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                {role === "host" ? "Host" : "Player"} view
+              </p>
+              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                {phaseTitle(phase)}
+              </h1>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              {hostCanEndGame ? (
+                <button
+                  type="button"
+                  onClick={handleEndGame}
+                  title="Ends the session for everyone. Unplayed clues stay on the board."
+                  className={`${ui.btnDanger} whitespace-nowrap`}
+                >
+                  End game
+                </button>
+              ) : null}
+              <span className="shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+                {phase}
+              </span>
+            </div>
+          </div>
+          {!isLobby ? (
+            <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
+              Session: {sessionCode}
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-              {phaseTitle(phase)}
-            </h1>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-            {hostCanEndGame ? (
-              <button
-                type="button"
-                onClick={handleEndGame}
-                title="Ends the session for everyone. Unplayed clues stay on the board."
-                className={`${ui.btnDanger} whitespace-nowrap`}
-              >
-                End game
-              </button>
-            ) : null}
-            <span className="shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-              {phase}
-            </span>
-          </div>
-        </div>
-        {!isLobby ? (
-          <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-            Session: {sessionCode}
-          </p>
-        ) : null}
-        {!wsReady && !hasReceivedLiveState ? (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Connecting…
-          </p>
-        ) : null}
-      </header>
+          ) : null}
+          {!wsReady && !hasReceivedLiveState ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Connecting…
+            </p>
+          ) : null}
+        </header>
+      ) : null}
 
       {showDisconnectedBanner ? (
-        <StatusBanner variant="warning" title="Disconnected from realtime">
-          <p>
-            The WebSocket to PartyKit closed. Refresh the page to reconnect.
-            What you see below is the last state synced to this browser.
-          </p>
-        </StatusBanner>
+        <div className={isBoardPhase ? "px-4 pt-3 md:px-6" : ""}>
+          <StatusBanner variant="warning" title="Disconnected from realtime">
+            <p>
+              The WebSocket to PartyKit closed. Refresh the page to reconnect.
+              What you see below is the last state synced to this browser.
+            </p>
+          </StatusBanner>
+        </div>
       ) : null}
 
       {noHostGameYet ? (
-        <StatusBanner variant="warning" title="No game at this session code">
-          <p>
-            This room has not been created yet. Open{" "}
-            <Link
-              href="/host"
-              className="font-medium underline underline-offset-2"
-            >
-              Host
-            </Link>{" "}
-            to create a session, or confirm the session code matches the host’s
-            link.
-          </p>
-        </StatusBanner>
+        <div className={isBoardPhase ? "px-4 md:px-6" : ""}>
+          <StatusBanner variant="warning" title="No game at this session code">
+            <p>
+              This room has not been created yet. Open{" "}
+              <Link
+                href="/host"
+                className="font-medium underline underline-offset-2"
+              >
+                Host
+              </Link>{" "}
+              to create a session, or confirm the session code matches the
+              host’s link.
+            </p>
+          </StatusBanner>
+        </div>
       ) : null}
 
       {playerNotOnRoster ? (
-        <StatusBanner variant="warning" title="Not on the player roster">
-          <p>
-            This browser is not registered for this game. Use{" "}
-            <Link
-              href="/join"
-              className="font-medium underline underline-offset-2"
-            >
-              Join
-            </Link>{" "}
-            with session code{" "}
-            <span className="font-mono font-medium">{sessionCode}</span> first,
-            or use the same device you joined from.
-          </p>
-        </StatusBanner>
+        <div className={isBoardPhase ? "px-4 md:px-6" : ""}>
+          <StatusBanner variant="warning" title="Not on the player roster">
+            <p>
+              This browser is not registered for this game. Use{" "}
+              <Link
+                href="/join"
+                className="font-medium underline underline-offset-2"
+              >
+                Join
+              </Link>{" "}
+              with session code{" "}
+              <span className="font-mono font-medium">{sessionCode}</span>{" "}
+              first, or use the same device you joined from.
+            </p>
+          </StatusBanner>
+        </div>
       ) : null}
 
       {actionError ? (
-        <StatusBanner variant="error" title="Action rejected">
-          <p>{actionError}</p>
-        </StatusBanner>
+        <div className={isBoardPhase ? "px-4 md:px-6" : ""}>
+          <StatusBanner variant="error" title="Action rejected">
+            <p>{actionError}</p>
+          </StatusBanner>
+        </div>
       ) : null}
 
       {isLobby ? (
@@ -745,13 +769,25 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {isBoardPhase ? (
-        <GamePlayShell tab={playTab} onTabChange={setPlayTab}>
+        <GameArchivistShell
+          tab={playTab}
+          onTabChange={setPlayTab}
+          shellMode={isCluePhase ? "clue" : "board"}
+          categoryName={categoryName}
+          statusSubtitle={roomState.board?.title ?? null}
+          phaseBadge={phase}
+          hostCanEndGame={hostCanEndGame}
+          onEndGame={handleEndGame}
+          connecting={!wsReady && !hasReceivedLiveState}
+          sidebarFooterBoard={<StandingPodium players={roomState.players} />}
+        >
           {playTab === "board" ? (
-            <div className="space-y-6">
+            <div className="space-y-8 md:space-y-10">
               {isCluePhase && openClue ? (
                 <ClueView
                   phase={phase === "judging" ? "judging" : "clue_open"}
                   viewRole={role}
+                  categoryName={categoryName}
                   clue={{
                     value: openClue.value,
                     question: openClue.question,
@@ -788,17 +824,20 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 </StatusBanner>
               ) : null}
               {phase === "board" && roomState.board ? (
-                <GameBoardGrid
-                  board={roomState.board}
-                  answeredClueIds={roomState.answeredClueIds}
-                  currentClueId={roomState.currentClueId}
-                  phase={phase}
-                  hostCanSelectClues={hostCanSelectClues}
-                  onHostSelectClue={
-                    hostCanSelectClues ? handleHostOpenClue : undefined
-                  }
-                  caption={boardCaption}
-                />
+                <>
+                  <GameBoardGrid
+                    board={roomState.board}
+                    answeredClueIds={roomState.answeredClueIds}
+                    currentClueId={roomState.currentClueId}
+                    phase={phase}
+                    hostCanSelectClues={hostCanSelectClues}
+                    onHostSelectClue={
+                      hostCanSelectClues ? handleHostOpenClue : undefined
+                    }
+                    caption={boardCaption}
+                  />
+                  <GameBoardArchivistFooter sessionCode={sessionCode} />
+                </>
               ) : null}
               {phase === "board" && !roomState.board ? (
                 <StatusBanner variant="error" title="No board in session">
@@ -817,12 +856,14 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               ) : null}
             </div>
           ) : (
-            <LiveLeaderboard
-              players={roomState.players}
-              selfPlayerId={role === "player" ? playerIdStored : null}
-            />
+            <div className="mx-auto max-w-2xl rounded-sm border border-archivist-outline-variant/20 bg-archivist-surface-lowest p-5 shadow-sm md:p-6">
+              <LiveLeaderboard
+                players={roomState.players}
+                selfPlayerId={role === "player" ? playerIdStored : null}
+              />
+            </div>
           )}
-        </GamePlayShell>
+        </GameArchivistShell>
       ) : null}
 
       {isGameOver ? (
@@ -831,9 +872,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         </div>
       ) : null}
 
-      <Link href="/" className={ui.linkBack}>
-        ← Home
-      </Link>
+      {!isBoardPhase ? (
+        <Link href="/" className={ui.linkBack}>
+          ← Home
+        </Link>
+      ) : null}
     </main>
   );
 }
