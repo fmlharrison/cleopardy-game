@@ -6,7 +6,7 @@ export function joinErrorTitle(message: string): string | undefined {
   if (m.includes("name is already taken")) {
     return "That name is taken";
   }
-  if (m.includes("room is full") || m.includes("6 players")) {
+  if (m.includes("room is full")) {
     return "Lobby is full";
   }
   if (m.includes("already started") || m.includes("join is closed")) {

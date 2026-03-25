@@ -12,6 +12,7 @@ import type { GamePlayTab } from "@/components/game/GamePlayShell";
 import { LiveLeaderboard } from "@/components/game/LiveLeaderboard";
 import { StandingPodium } from "@/components/game/StandingPodium";
 import { StatusBanner } from "@/components/ui/StatusBanner";
+import { MAX_LOBBY_PLAYERS } from "@/lib/game-constants";
 import { readStoredId, STORAGE_KEYS } from "@/lib/ids";
 import type { RoomState } from "@/types/game";
 import type { ClientMessage } from "@/types/messages";
@@ -45,25 +46,6 @@ function messageRaw(data: string | ArrayBuffer | Blob): string | null {
 /** Lobby roster display only (join order). Score standings use `sortPlayersByStandings`. */
 function sortLobbyRosterByJoinOrder(players: RoomState["players"]) {
   return [...players].sort((a, b) => a.joinOrder - b.joinOrder);
-}
-
-function phaseTitle(phase: RoomState["phase"]): string {
-  switch (phase) {
-    case "lobby":
-      return "Lobby";
-    case "board":
-      return "Game";
-    case "clue_open":
-      return "Game";
-    case "judging":
-      return "Game";
-    case "game_over":
-      return "Game over";
-    default: {
-      const _x: never = phase;
-      return _x;
-    }
-  }
 }
 
 export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
@@ -499,46 +481,6 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
           : `${ui.page} ${pageWidthClass} ${ui.stack}`
       }
     >
-      {/* {!isBoardPhase ? (
-        <header className={`${ui.surfaceHeader} space-y-2`}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                {role === "host" ? "Host" : "Player"} view
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                {phaseTitle(phase)}
-              </h1>
-            </div>
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-              {hostCanEndGame ? (
-                <button
-                  type="button"
-                  onClick={handleEndGame}
-                  title="Ends the session for everyone. Unplayed clues stay on the board."
-                  className={`${ui.btnDanger} whitespace-nowrap`}
-                >
-                  End game
-                </button>
-              ) : null}
-              <span className="shrink-0 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-                {phase}
-              </span>
-            </div>
-          </div>
-          {!isLobby ? (
-            <p className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-              Session: {sessionCode}
-            </p>
-          ) : null}
-          {!wsReady && !hasReceivedLiveState ? (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Connecting…
-            </p>
-          ) : null}
-        </header>
-      ) : null} */}
-
       {showDisconnectedBanner ? (
         <div className={isBoardPhase ? "px-4 pt-3 md:px-6" : ""}>
           <StatusBanner variant="warning" title="Disconnected from realtime">
@@ -656,7 +598,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 Contestants
               </h2>
               <span className="font-mono text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                {sortedLobbyPlayers.length} / 6
+                {sortedLobbyPlayers.length} / {MAX_LOBBY_PLAYERS}
               </span>
             </div>
             <p className={ui.helper}>

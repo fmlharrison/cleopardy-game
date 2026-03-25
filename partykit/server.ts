@@ -12,6 +12,7 @@ import {
   sendSessionState,
 } from "./room-helpers";
 import { getBoardClueIds, getClueById } from "../src/lib/board-clue";
+import { MAX_LOBBY_PLAYERS } from "../src/lib/game-constants";
 import type { Player, RoomState } from "../src/types/game";
 import type { ClientMessage } from "../src/types/messages";
 
@@ -178,8 +179,11 @@ async function handleClientMessage(
         return;
       }
 
-      if (joinState.players.length >= 6) {
-        sendError(sender, "This room is full (6 players max).");
+      if (joinState.players.length >= MAX_LOBBY_PLAYERS) {
+        sendError(
+          sender,
+          `This room is full (${MAX_LOBBY_PLAYERS} players max).`,
+        );
         return;
       }
 
