@@ -33,14 +33,14 @@ Open [http://localhost:3000](http://localhost:3000).
 - WebSocket path uses party id **`main`** (PartyKit’s default for `server.ts`), not necessarily `name` in `partykit.json`.
 - Optional overrides: copy **`.env.example`** → **`.env.local`** and set `NEXT_PUBLIC_PARTYKIT_HOST`, `NEXT_PUBLIC_PARTYKIT_PORT`, or `NEXT_PUBLIC_PARTYKIT_PARTY` if your setup differs.
 
-## Demo board JSON
+## Board format (reference)
 
-A small valid board lives at **`data/demo-board.json`**. On **`/host`**, paste the JSON or use **Upload a board file** to load it, then validate and create the session. Schema: `src/schemas/board-schema.ts` (unique clue ids across the board, 1–6 categories, 1–5 clues per category).
+A sample board JSON for tests or tooling lives at **`data/demo-board.json`**. The host UI builds boards in the browser (categories and clues); the same schema applies when sessions are created: `src/schemas/board-schema.ts` (unique clue ids across the board, **1–5** categories, **1–5** clues per category, clue values **$200–$1000** by row).
 
 ## Host flow
 
 1. Go to **`/host`**.
-2. Create a session with a board (use **`data/demo-board.json`** for a quick test).
+2. Add category names and clues (optional board title; defaults to “Custom game”), then click **Create game**.
 3. Open the game link you get (includes **`?role=host`**). Keep this tab/device as host — `localStorage` stores the host id.
 
 ## Join flow

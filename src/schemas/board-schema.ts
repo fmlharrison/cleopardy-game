@@ -2,23 +2,26 @@ import { z } from "zod";
 
 import type { Board } from "@/types/game";
 
+const nonEmptyTrimmed = (field: string) =>
+  z.string().trim().min(1, `${field} is required`);
+
 const clueSchema = z.object({
   id: z.string().min(1, "Clue id must be non-empty"),
   value: z.number().int().positive(),
-  question: z.string(),
-  answer: z.string(),
+  question: nonEmptyTrimmed("Clue text"),
+  answer: nonEmptyTrimmed("Correct answer"),
 });
 
 const categorySchema = z.object({
   id: z.string().min(1, "Category id must be non-empty"),
-  name: z.string(),
+  name: nonEmptyTrimmed("Category name"),
   clues: z.array(clueSchema).min(1).max(5),
 });
 
 export const boardSchema = z
   .object({
-    title: z.string().min(1, "Title is required"),
-    categories: z.array(categorySchema).min(1).max(6),
+    title: nonEmptyTrimmed("Board title"),
+    categories: z.array(categorySchema).min(1).max(5),
   })
   .superRefine((data, ctx) => {
     const categoryIds = data.categories.map((c) => c.id);
@@ -31,9 +34,19 @@ export const boardSchema = z
     }
 
     const clueIds: string[] = [];
-    for (const cat of data.categories) {
-      for (const clue of cat.clues) {
+    for (let ci = 0; ci < data.categories.length; ci++) {
+      const cat = data.categories[ci];
+      for (let li = 0; li < cat.clues.length; li++) {
+        const clue = cat.clues[li];
         clueIds.push(clue.id);
+        const expected = 200 * (li + 1);
+        if (clue.value !== expected) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Clue value must be $${expected} (clue ${li + 1} in category ${ci + 1})`,
+            path: ["categories", ci, "clues", li, "value"],
+          });
+        }
       }
     }
     if (new Set(clueIds).size !== clueIds.length) {

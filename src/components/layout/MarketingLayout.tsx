@@ -5,6 +5,8 @@ import { useId, useState } from "react";
 
 export type MarketingLayoutProps = {
   children: React.ReactNode;
+  /** Wide canvas for board builder; default matches join/home forms. */
+  contentMaxWidth?: "narrow" | "wide";
 };
 
 /**
@@ -13,6 +15,7 @@ export type MarketingLayoutProps = {
  */
 export function MarketingLayout({
   children,
+  contentMaxWidth = "narrow",
 }: MarketingLayoutProps) {
   const [rulesOpen, setRulesOpen] = useState(false);
   const rulesTitleId = useId();
@@ -91,7 +94,15 @@ export function MarketingLayout({
 
       <div className="flex flex-1 flex-col pt-[5.5rem] lg:pt-24">
         <main className="flex flex-1 flex-col bg-archivist-surface-bright px-6 py-8 md:px-12 md:pb-16 md:pt-12">
-          <div className="mx-auto w-full max-w-lg lg:max-w-xl">{children}</div>
+          <div
+            className={
+              contentMaxWidth === "wide"
+                ? "mx-auto w-full max-w-[1600px]"
+                : "mx-auto w-full max-w-lg lg:max-w-xl"
+            }
+          >
+            {children}
+          </div>
         </main>
       </div>
     </div>

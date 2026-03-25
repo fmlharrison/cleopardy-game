@@ -1,5 +1,11 @@
+import { MarketingLayout } from "@/components/layout/MarketingLayout";
+
 import { HostPageClient } from "./host-page-client";
 
 export default function HostPage() {
-  return <HostPageClient />;
+  return (
+    <MarketingLayout contentMaxWidth="wide">
+      <HostPageClient />
+    </MarketingLayout>
+  );
 }

@@ -41,6 +41,18 @@ body {
   color: var(--foreground);
 }
 
+/* Host board builder: horizontal category strip */
+.board-builder-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.board-builder-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-archivist-surface-low);
+}
+.board-builder-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-archivist-outline-variant);
+  border-radius: 4px;
+}
+
 /* One-time reveal for end-game winner (respect reduced motion). */
 @keyframes endgame-reveal {
   from {
