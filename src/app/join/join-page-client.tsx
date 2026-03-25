@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -8,7 +7,7 @@ import { StatusBanner } from "@/components/ui/StatusBanner";
 import { joinErrorTitle } from "@/lib/join-error-title";
 import { getOrCreateStoredId, STORAGE_KEYS } from "@/lib/ids";
 import { joinPlayerSession } from "@/lib/join-player-session";
-import { ui } from "@/lib/ui";
+import { cleopardyUi } from "@/lib/ui";
 import { isValidSessionCode, normalizeSessionCode } from "@/lib/session-code";
 
 export function JoinPageClient() {
@@ -77,21 +76,21 @@ export function JoinPageClient() {
   );
 
   return (
-    <main className={`${ui.page} ${ui.pageNarrow} ${ui.stack}`}>
+    <div className={cleopardyUi.stack}>
       <header className="space-y-3">
-        <p className={ui.eyebrow}>Join a session</p>
-        <h1 className={ui.h1}>Join</h1>
-        <p className={ui.lead}>
+        <p className={cleopardyUi.eyebrow}>Join a session</p>
+        <h1 className={cleopardyUi.h1}>Join</h1>
+        <p className={cleopardyUi.lead}>
           Enter the six-character code from your host and the name you want on
           the board.
         </p>
       </header>
 
-      <div className={ui.formCard}>
-        <h2 className={`${ui.sectionTitle} mb-6`}>Your details</h2>
+      <div className={cleopardyUi.formCard}>
+        <h2 className={`${cleopardyUi.sectionTitle} mb-6`}>Your details</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <label htmlFor="join-name" className={ui.formLabel}>
+            <label htmlFor="join-name" className={cleopardyUi.formLabel}>
               Display name
             </label>
             <input
@@ -100,14 +99,14 @@ export function JoinPageClient() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="nickname"
-              className={ui.input}
+              className={cleopardyUi.input}
               maxLength={40}
               disabled={pending}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="join-code" className={ui.formLabel}>
+            <label htmlFor="join-code" className={cleopardyUi.formLabel}>
               Session code
             </label>
             <input
@@ -121,18 +120,22 @@ export function JoinPageClient() {
               spellCheck={false}
               maxLength={6}
               placeholder="ABCD12"
-              className={`${ui.input} font-mono uppercase tracking-widest`}
+              className={`${cleopardyUi.input} font-mono uppercase tracking-widest`}
               disabled={pending}
               aria-describedby="join-code-hint"
             />
-            <p id="join-code-hint" className={ui.helper}>
+            <p id="join-code-hint" className={cleopardyUi.helper}>
               Six characters from the host (letters and digits; shown uppercase
               as you type).
             </p>
           </div>
 
           {error ? (
-            <StatusBanner variant="error" title={joinErrorTitle(error)}>
+            <StatusBanner
+              variant="error"
+              title={joinErrorTitle(error)}
+              className="rounded-sm border-red-300/80 bg-red-50 text-red-950"
+            >
               <p>{error}</p>
             </StatusBanner>
           ) : null}
@@ -141,17 +144,13 @@ export function JoinPageClient() {
             <button
               type="submit"
               disabled={pending}
-              className={`${ui.btnPrimary} w-full sm:w-auto`}
+              className={`${cleopardyUi.btnPrimary} w-full sm:w-auto`}
             >
               {pending ? "Connecting to session…" : "Join game"}
             </button>
           </div>
         </form>
       </div>
-
-      <Link href="/" className={ui.linkBack}>
-        ← Home
-      </Link>
-    </main>
+    </div>
   );
 }

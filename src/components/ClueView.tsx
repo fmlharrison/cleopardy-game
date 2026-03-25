@@ -73,7 +73,7 @@ function isEditableTarget(el: EventTarget | null): boolean {
   return el.isContentEditable;
 }
 
-const btnArchivist =
+const btnCleopardy =
   "rounded-sm px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40";
 
 export function ClueView({
@@ -337,7 +337,7 @@ export function ClueView({
                     type="button"
                     disabled={!onHostMarkCorrect}
                     onClick={onHostMarkCorrect}
-                    className={`${btnArchivist} bg-archivist-primary-container text-archivist-cream hover:opacity-90`}
+                    className={`${btnCleopardy} bg-archivist-primary-container text-archivist-cream hover:opacity-90`}
                   >
                     Correct
                   </button>
@@ -345,7 +345,7 @@ export function ClueView({
                     type="button"
                     disabled={!onHostMarkIncorrect}
                     onClick={onHostMarkIncorrect}
-                    className={`${btnArchivist} border border-red-300 bg-white text-red-800 hover:bg-red-50`}
+                    className={`${btnCleopardy} border border-red-300 bg-white text-red-800 hover:bg-red-50`}
                   >
                     Incorrect
                   </button>
@@ -353,7 +353,7 @@ export function ClueView({
                     type="button"
                     disabled={!onHostReopenBuzz}
                     onClick={onHostReopenBuzz}
-                    className={`${btnArchivist} border border-archivist-outline-variant bg-archivist-surface-lowest text-archivist-ink hover:bg-archivist-surface-high`}
+                    className={`${btnCleopardy} border border-archivist-outline-variant bg-archivist-surface-lowest text-archivist-ink hover:bg-archivist-surface-high`}
                   >
                     Reopen buzz
                   </button>
@@ -361,7 +361,7 @@ export function ClueView({
                     type="button"
                     disabled={!onHostCloseClue}
                     onClick={onHostCloseClue}
-                    className={`${btnArchivist} bg-archivist-ink text-archivist-cream hover:opacity-90`}
+                    className={`${btnCleopardy} bg-archivist-ink text-archivist-cream hover:opacity-90`}
                   >
                     Close clue
                   </button>

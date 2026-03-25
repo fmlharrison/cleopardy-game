@@ -14,7 +14,7 @@ import {
   MdOutlineStars,
 } from "@/components/icons/md";
 
-export type GameArchivistShellProps = {
+export type GameShellProps = {
   tab: GamePlayTab;
   onTabChange: (tab: GamePlayTab) => void;
   /** Sidebar footer: Standing Podium vs Active Category card */
@@ -31,7 +31,7 @@ export type GameArchivistShellProps = {
   children: React.ReactNode;
 };
 
-export function GameArchivistShell({
+export function GameShell({
   tab,
   onTabChange,
   shellMode,
@@ -43,7 +43,7 @@ export function GameArchivistShell({
   connecting,
   sidebarFooterBoard,
   children,
-}: GameArchivistShellProps) {
+}: GameShellProps) {
   const [rulesOpen, setRulesOpen] = useState(false);
   const rulesTitleId = useId();
 
@@ -114,7 +114,7 @@ export function GameArchivistShell({
         aria-label="Game"
       >
         <div className="min-w-0 text-xl font-bold uppercase tracking-tighter text-archivist-ink md:text-2xl">
-          The Archivist: Jeopardy
+          Cleopardy
         </div>
         <div className="flex shrink-0 items-center gap-x-3 md:gap-x-6">
           <button

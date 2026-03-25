@@ -1,10 +1,10 @@
-export type GameBoardArchivistFooterProps = {
+export type GameBoardFooterProps = {
   sessionCode: string;
 };
 
-export function GameBoardArchivistFooter({
+export function GameBoardFooter({
   sessionCode,
-}: GameBoardArchivistFooterProps) {
+}: GameBoardFooterProps) {
   return (
     <footer className="mt-16 grid grid-cols-1 gap-8 border-t border-archivist-outline-variant/20 pt-10 md:grid-cols-3 md:gap-12 md:pt-12">
       <div className="flex items-end justify-start md:justify-end">

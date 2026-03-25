@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ClueView } from "@/components/ClueView";
 import { EndGameLeaderboard } from "@/components/game/EndGameLeaderboard";
-import { GameArchivistShell } from "@/components/game/GameArchivistShell";
-import { GameBoardArchivistFooter } from "@/components/game/GameBoardArchivistFooter";
+import { GameShell } from "@/components/game/GameShell";
+import { GameBoardFooter } from "@/components/game/GameBoardFooter";
 import { GameBoardGrid } from "@/components/game/GameBoardGrid";
 import type { GamePlayTab } from "@/components/game/GamePlayShell";
 import { LiveLeaderboard } from "@/components/game/LiveLeaderboard";
@@ -769,7 +769,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
       ) : null}
 
       {isBoardPhase ? (
-        <GameArchivistShell
+        <GameShell
           tab={playTab}
           onTabChange={setPlayTab}
           shellMode={isCluePhase ? "clue" : "board"}
@@ -836,7 +836,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                     }
                     caption={boardCaption}
                   />
-                  <GameBoardArchivistFooter sessionCode={sessionCode} />
+                  <GameBoardFooter sessionCode={sessionCode} />
                 </>
               ) : null}
               {phase === "board" && !roomState.board ? (
@@ -861,7 +861,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               selfPlayerId={role === "player" ? playerIdStored : null}
             />
           )}
-        </GameArchivistShell>
+        </GameShell>
       ) : null}
 
       {isGameOver ? (
