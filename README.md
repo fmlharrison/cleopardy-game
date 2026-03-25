@@ -49,6 +49,11 @@ A sample board JSON for tests or tooling lives at **`data/demo-board.json`**. Th
 2. Enter the session code and display name.
 3. Open the game link (**`?role=player`**). `localStorage` stores the player id for reconnect.
 
+## Spectator (watch only)
+
+- Open **`/game/<SESSION_CODE>?role=spectator`** in the browser (no saved id required), or from **`/join`** enter the code and use **Watch only** for the same URL.
+- Spectators see the board, live clues, buzz state, leaderboard tab, and final scores, but cannot buzz, score, or host.
+
 ## Next.js only (no WebSocket)
 
 ```bash

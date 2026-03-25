@@ -75,6 +75,16 @@ export function JoinPageClient() {
     [name, sessionCodeInput, router],
   );
 
+  const handleWatchOnly = useCallback(() => {
+    setError(null);
+    const code = normalizeSessionCode(sessionCodeInput);
+    if (!isValidSessionCode(code)) {
+      setError("Session code must be 6 characters (A–Z and 2–9, no 0/O/1/I).");
+      return;
+    }
+    router.push(`/game/${encodeURIComponent(code)}?role=spectator`);
+  }, [sessionCodeInput, router]);
+
   return (
     <div className={cleopardyUi.stack}>
       <header className="space-y-3">
@@ -150,6 +160,22 @@ export function JoinPageClient() {
             </button>
           </div>
         </form>
+      </div>
+
+      <div className={cleopardyUi.formCard}>
+        <h2 className={`${cleopardyUi.sectionTitle} mb-2`}>Just watching?</h2>
+        <p className={cleopardyUi.helper}>
+          Use the same session code as above for a read-only view: board, clues,
+          scores, and finale — no display name and no buzzing.
+        </p>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={handleWatchOnly}
+          className={`${cleopardyUi.btnSecondary} mt-4 w-full sm:w-auto`}
+        >
+          Watch only
+        </button>
       </div>
     </div>
   );

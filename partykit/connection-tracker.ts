@@ -32,6 +32,11 @@ export class RoomConnectionTracker {
     this.hostConnIds.add(connId);
   }
 
+  /** Roster player id for this socket after `attachPlayer`, if any. */
+  getPlayerIdForConnection(connId: string): string | null {
+    return this.connToPlayer.get(connId) ?? null;
+  }
+
   /** Register this socket for a roster player. */
   attachPlayer(connId: string, playerId: string): void {
     this.clearConn(connId);

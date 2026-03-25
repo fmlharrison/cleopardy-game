@@ -26,7 +26,7 @@ import {
   stringifyClientMessage,
 } from "@/lib/websocket";
 
-export type GameRoomRole = "host" | "player";
+export type GameRoomRole = "host" | "player" | "spectator";
 
 export type GameRoomClientProps = {
   sessionCode: string;
@@ -321,7 +321,11 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           View:{" "}
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
-            {role === "host" ? "Host" : "Player"}
+            {role === "host"
+              ? "Host"
+              : role === "spectator"
+                ? "Spectator"
+                : "Player"}
           </span>{" "}
           (
           <code className="rounded bg-zinc-200 px-1 text-[11px] dark:bg-zinc-800">
@@ -548,12 +552,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
               id="lobby-waiting-heading"
               className="mt-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50"
             >
-              {role === "host" ? "You’re hosting" : "You’re in the lobby"}
+              {role === "host"
+                ? "You’re hosting"
+                : role === "spectator"
+                  ? "You’re spectating"
+                  : "You’re in the lobby"}
             </h2>
             <p className={`${ui.helper} mt-1`}>
               {role === "host"
                 ? "Share the code so up to six contestants can join from the Join page."
-                : "The host will open the board when everyone who’s playing has joined."}
+                : role === "spectator"
+                  ? "You can watch the board and scores but cannot buzz in. Share the session code with contestants via Join, or a watch-only link with ?role=spectator."
+                  : "The host will open the board when everyone who’s playing has joined."}
             </p>
 
             <div className="mt-5 space-y-2">
@@ -579,12 +589,18 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-zinc-300 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200">
-                {role === "host" ? "Host" : "Contestant"}
+                {role === "host"
+                  ? "Host"
+                  : role === "spectator"
+                    ? "Spectator"
+                    : "Contestant"}
               </span>
               <span className="text-xs text-zinc-500 dark:text-zinc-400">
                 {role === "host"
                   ? "You control clues and scoring."
-                  : "You’ll buzz in when clues open."}
+                  : role === "spectator"
+                    ? "Read-only view — no buzzing or scoring."
+                    : "You’ll buzz in when clues open."}
               </span>
             </div>
           </section>
@@ -690,6 +706,23 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                 Start game
               </button>
             </section>
+          ) : role === "spectator" ? (
+            <section
+              className={`${ui.surfacePanel} space-y-3 border-violet-200/60 bg-violet-50/40 dark:border-violet-900/40 dark:bg-violet-950/25`}
+              aria-labelledby="spectator-wait-heading"
+            >
+              <h2
+                id="spectator-wait-heading"
+                className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+              >
+                Watch-only
+              </h2>
+              <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                Stay on this page. When the host starts, you’ll see the same
+                board and clues as everyone else, without buzzing or scoring
+                controls.
+              </p>
+            </section>
           ) : (
             <section
               className={`${ui.surfacePanel} space-y-3 border-blue-200/60 bg-blue-50/40 dark:border-blue-900/40 dark:bg-blue-950/25`}
@@ -738,7 +771,7 @@ export function GameRoomClient({ sessionCode, role }: GameRoomClientProps) {
                   players={roomState.players}
                   buzzOpen={roomState.buzzOpen}
                   buzzWinnerPlayerId={roomState.buzzWinnerPlayerId}
-                  selfPlayerId={playerIdStored}
+                  selfPlayerId={role === "player" ? playerIdStored : null}
                   buzzEligible={playerBuzzEligible}
                   onBuzz={playerBuzzEligible ? handleBuzz : undefined}
                   showInlineScoreboard={false}

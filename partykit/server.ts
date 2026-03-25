@@ -312,6 +312,14 @@ async function handleClientMessage(
         sendError(sender, "Reconnect before buzzing.");
         return;
       }
+      const boundPlayerId = connections.getPlayerIdForConnection(sender.id);
+      if (boundPlayerId !== msg.playerId) {
+        sendError(
+          sender,
+          "Buzz only from the tab where you joined or reconnected as this player.",
+        );
+        return;
+      }
       if (buzzState.phase !== "clue_open") {
         sendError(sender, "Buzzing is not open.");
         return;

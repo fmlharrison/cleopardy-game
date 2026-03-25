@@ -18,7 +18,9 @@ export default async function GameSessionPage({
   const sessionCode = decodeURIComponent(sessionCodeParam);
 
   const role: GameRoomRole | null =
-    roleParam === "host" || roleParam === "player" ? roleParam : null;
+    roleParam === "host" || roleParam === "player" || roleParam === "spectator"
+      ? roleParam
+      : null;
 
   if (!role) {
     return (

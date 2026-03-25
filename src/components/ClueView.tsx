@@ -11,7 +11,7 @@ import {
 } from "@/components/icons/md";
 import type { Player } from "@/types/game";
 
-/** Active clue copy; `answer` is only rendered when `viewRole === "host"`. */
+/** Active clue copy; `answer` is only rendered for `viewRole === "host"`. */
 export type ClueViewClue = {
   value: number;
   question: string;
@@ -20,7 +20,7 @@ export type ClueViewClue = {
 
 export type ClueViewProps = {
   phase: "clue_open" | "judging";
-  viewRole: "host" | "player";
+  viewRole: "host" | "player" | "spectator";
   clue: ClueViewClue | null;
   /** Category title for the active clue (sidebar + card header). */
   categoryName?: string | null;
@@ -223,6 +223,11 @@ export function ClueView({
                       {clue.answer}
                     </p>
                   </div>
+                ) : null}
+                {viewRole === "spectator" ? (
+                  <p className="mt-8 max-w-md text-center text-sm text-archivist-on-surface-variant">
+                    Spectating — buzz and scoring are disabled on this view.
+                  </p>
                 ) : null}
               </div>
             </div>
