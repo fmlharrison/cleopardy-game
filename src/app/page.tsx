@@ -8,7 +8,6 @@ export default function HomePage() {
     <MarketingLayout>
       <div className={cleopardyUi.stack}>
         <header className="space-y-3">
-          <p className={cleopardyUi.eyebrow}>Multiplayer trivia</p>
           <h1 className={cleopardyUi.h1}>Cleopardy</h1>
           <p className={cleopardyUi.lead}>
             Choose to Host or Join a game

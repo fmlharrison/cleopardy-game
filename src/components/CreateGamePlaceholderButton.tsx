@@ -19,17 +19,6 @@ export function CreateGamePlaceholderButton({
       <h2 id="create-heading" className={ui.sectionTitle}>
         Create session
       </h2>
-      <p className={ui.helper}>
-        Opens the PartyKit room for your validated board. Locally, use{" "}
-        <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
-          npm run dev:all
-        </code>{" "}
-        or{" "}
-        <code className="rounded bg-zinc-200 px-1 dark:bg-zinc-800">
-          npm run party:dev
-        </code>{" "}
-        so the WebSocket can connect.
-      </p>
       <button
         type="button"
         disabled={isDisabled}
